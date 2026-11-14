@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Les Petits Héros – JDR en famille</title>
+  <meta name="description" content="Générateur d'aventures et règles de jeu de rôle très simples pour jouer en famille avec des enfants de 5 à 8 ans.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="#accueil" class="logo">🛡️ Les Petits Héros</a>
+    <nav class="tabs" aria-label="Navigation principale">
+      <a href="#accueil" data-tab="accueil">🏠 Accueil</a>
+      <a href="#regles" data-tab="regles">📜 Règles</a>
+      <a href="#heros" data-tab="heros">🧒 Héros</a>
+      <a href="#aventure" data-tab="aventure">🗺️ Aventure</a>
+      <a href="#des" data-tab="des">🎲 Dés</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============ ACCUEIL ============ -->
+    <section id="accueil" class="panel">
+      <div class="hero-banner">
+        <h1>Des aventures à raconter ensemble</h1>
+        <p>Un jeu de rôle tout simple pour jouer en famille, pensé pour des enfants de <strong>5 et 8 ans</strong>.
+          Un parent raconte, les enfants décident, un dé fait le reste.</p>
+        <a class="btn btn-big" href="#aventure">🗺️ Créer une aventure</a>
+      </div>
+
+      <h2>Un jeu de rôle, c'est quoi ?</h2>
+      <p>C'est une histoire qu'on invente <strong>tous ensemble, à voix haute</strong>. Un adulte, le <em>Conteur</em>,
+        décrit où sont les héros et ce qu'ils voient. Chaque enfant joue un héros et dit ce qu'il fait.
+        Quand c'est difficile, on lance un dé pour savoir si ça marche. Il n'y a pas de gagnant ni de perdant :
+        on réussit l'aventure ensemble.</p>
+
+      <h2>Qui fait quoi dans la famille ?</h2>
+      <div class="cards">
+        <div class="card">
+          <div class="card-emoji">🧙‍♂️</div>
+          <h3>Le Conteur (Papa)</h3>
+          <p>Il connaît le jeu de rôle. Il lit l'aventure générée, joue les personnages rencontrés et dit quand lancer le dé.
+            Son rôle : que tout le monde s'amuse, pas de « battre » les enfants.</p>
+        </div>
+        <div class="card">
+          <div class="card-emoji">🦉</div>
+          <h3>Le Compagnon (Maman)</h3>
+          <p>Elle découvre le jeu ? Parfait ! Elle joue un <strong>compagnon</strong> (une chouette, un petit dragon…)
+            qui accompagne les héros. Elle montre l'exemple, donne des idées quand les enfants bloquent
+            et aide le plus petit à lancer et compter le dé. Elle apprend en jouant, sans rien avoir à préparer.</p>
+        </div>
+        <div class="card">
+          <div class="card-emoji">🧒👧</div>
+          <h3>Les Héros (les enfants)</h3>
+          <p>Ils créent leur héros, disent ce qu'ils font et lancent le dé. Il n'y a pas de mauvaise idée :
+            plus l'idée est drôle ou gentille, mieux c'est !</p>
+        </div>
+      </div>
+
+      <h2>Votre première partie en 5 étapes</h2>
+      <ol class="steps">
+        <li><strong>Lisez les <a href="#regles">règles</a></strong> (5 minutes, elles tiennent sur une page).</li>
+        <li><strong>Créez les <a href="#heros">héros</a></strong> avec les enfants et imprimez leurs fiches. Ils adorent dessiner leur héros dessus !</li>
+        <li><strong>Générez une <a href="#aventure">aventure</a></strong> courte (20–30 min) pour commencer. Le Conteur la lit une fois avant de jouer.</li>
+        <li><strong>Préparez la table</strong> : un dé à 6 faces (ou l'<a href="#des">onglet Dés</a>), des jetons pour les cœurs et les étoiles (bonbons, boutons, Lego…).</li>
+        <li><strong>Jouez !</strong> Et terminez toujours par le « moment de fierté » : chacun dit ce qu'il a préféré.</li>
+      </ol>
+    </section>
+
+    <!-- ============ REGLES ============ -->
+    <section id="regles" class="panel">
+      <div class="print-actions no-print">
+        <button class="btn" onclick="window.print()">🖨️ Imprimer les règles</button>
+      </div>
+
+      <h1>📜 Les règles des Petits Héros</h1>
+      <p class="lead">À lire aux enfants. Tout tient en 5 idées.</p>
+
+      <div class="rules-grid">
+        <div class="rule">
+          <div class="rule-num">1</div>
+          <h3>Ton héros a 3 talents</h3>
+          <ul class="talents">
+            <li><span class="t-icon">💪</span> <strong>Force</strong> : courir, sauter, grimper, pousser, porter.</li>
+            <li><span class="t-icon">🧠</span> <strong>Malin</strong> : réfléchir, chercher, trouver une ruse, se cacher.</li>
+            <li><span class="t-icon">❤️</span> <strong>Cœur</strong> : parler, consoler, se faire des amis, être courageux.</li>
+          </ul>
+          <p>Tu choisis <strong>un super-talent ⭐</strong>. C'est là que ton héros est le plus fort.</p>
+        </div>
+
+        <div class="rule">
+          <div class="rule-num">2</div>
+          <h3>Quand c'est difficile, on lance le dé</h3>
+          <p class="big-rule">🎲 <strong>4, 5 ou 6</strong> = ça marche !</p>
+          <p>1, 2 ou 3 = ça ne marche pas tout à fait… et il se passe quelque chose de rigolo ou d'inattendu.</p>
+          <p>Avec ton <strong>super-talent ⭐</strong>, tu lances <strong>2 dés</strong> et tu gardes le meilleur.</p>
+        </div>
+
+        <div class="rule">
+          <div class="rule-num">3</div>
+          <h3>On s'aide !</h3>
+          <p>Si tu racontes comment tu aides ton ami, il lance <strong>un dé de plus</strong> et garde le meilleur.</p>
+          <p>Le Compagnon aussi peut aider, une fois par scène.</p>
+        </div>
+
+        <div class="rule">
+          <div class="rule-num">4</div>
+          <h3>Les étoiles ✨</h3>
+          <p>Quand tu as une super idée, que tu es très gentil ou que tu fais rire tout le monde, le Conteur te donne une <strong>étoile</strong>.</p>
+          <p>Dépense une étoile pour <strong>relancer le dé</strong>.</p>
+        </div>
+
+        <div class="rule">
+          <div class="rule-num">5</div>
+          <h3>Les cœurs ❤️❤️❤️</h3>
+          <p>Ton héros a <strong>3 cœurs</strong>. Quand il prend un coup ou une grosse frayeur, il perd un cœur.</p>
+          <p>À 0 cœur, il n'est pas mort : il est <strong>tout étourdi</strong> et s'assoit. Un ami peut le réveiller en lui faisant un câlin (ou en lui donnant à manger) : il récupère 1 cœur.</p>
+        </div>
+
+        <div class="rule">
+          <div class="rule-num">✨</div>
+          <h3>Le pouvoir magique</h3>
+          <p>Chaque héros a un <strong>pouvoir spécial</strong> (voler, parler aux animaux…).
+            Une fois par aventure, il l'utilise et <strong>réussit automatiquement</strong>, sans lancer le dé.</p>
+        </div>
+      </div>
+
+      <h2>🛑 La carte « Pause »</h2>
+      <p>Posez une carte (ou un objet) au milieu de la table. Si quelqu'un a peur ou n'aime pas ce qui se passe,
+        il la touche : on s'arrête, on en parle, et le Conteur change l'histoire. Sans discuter, sans se moquer.</p>
+
+      <h2>🧒 Adapter selon l'âge</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>Pour le 5 ans</h3>
+          <ul>
+            <li>Il suffit de reconnaître si le dé montre <strong>plus de 3 points</strong>. Le site affiche aussi ✅ ou 🌀.</li>
+            <li>Laissez-le décrire son action avec des gestes, des bruits, un dessin.</li>
+            <li>Proposez-lui 2 choix quand il bloque : « Tu grimpes à l'arbre ou tu appelles l'oiseau ? »</li>
+            <li>Donnez-lui une étoile dès qu'il participe : c'est sa récompense.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Pour le 8 ans</h3>
+          <ul>
+            <li>Il peut tenir le compte des cœurs et des étoiles de toute l'équipe.</li>
+            <li>Laissez-le proposer des plans et faire parler son héros (« Je dis au troll… »).</li>
+            <li>Option : il peut être « grand frère/grande sœur » et donner son dé d'aide au plus jeune.</li>
+            <li>Plus tard, il peut inventer une scène et devenir Conteur à son tour !</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>🧙‍♂️ Guide du Conteur</h2>
+      <div class="gm-tips">
+        <div class="tip"><strong>Dites « oui, et… » ou « oui, mais… »</strong> plutôt que « non ». Un enfant veut parler au rocher ? Peut-être que le rocher répond !</div>
+        <div class="tip"><strong>Un échec fait avancer l'histoire.</strong> Le dé rate ? Le héros passe quand même, mais il tombe dans la boue, réveille un hérisson grognon ou perd son chapeau. Jamais de « il ne se passe rien ».</div>
+        <div class="tip"><strong>Ne lancez pas le dé pour tout.</strong> Seulement quand c'est excitant. Ouvrir une porte normale : pas de dé.</div>
+        <div class="tip"><strong>Chacun son tour de projecteur.</strong> Demandez directement à chaque enfant : « Et toi, que fait ta princesse-pirate ? »</div>
+        <div class="tip"><strong>Faites des voix !</strong> Une voix grave pour le géant, une petite voix aiguë pour la souris. Les enfants adorent.</div>
+        <div class="tip"><strong>Les méchants ne sont jamais vraiment méchants.</strong> Ils ont une raison (ils sont seuls, ils ont faim, ils sont tristes). Le Cœur peut toujours gagner.</div>
+        <div class="tip"><strong>Courte, c'est mieux.</strong> 20 à 45 minutes, c'est parfait. Arrêtez-vous avant que l'attention ne baisse. Vous pouvez finir une aventure le lendemain.</div>
+        <div class="tip"><strong>Difficulté :</strong> facile = 3 ou plus, normal = 4 ou plus, difficile = 5 ou plus. Dans le doute : normal.</div>
+      </div>
+
+      <h2>🦉 Petit guide du Compagnon (pour la personne qui découvre)</h2>
+      <ul class="checklist">
+        <li>Choisissez un compagnon rigolo : une chouette qui sait tout, un petit dragon peureux, un chat qui parle…</li>
+        <li>Vous n'êtes pas le héros : vous aidez les enfants à briller. Posez des questions : « Tu crois qu'on devrait regarder derrière la cascade ? »</li>
+        <li>Une fois par scène, vous pouvez aider un héros : il lance un dé de plus.</li>
+        <li>Aidez le plus jeune à lancer et à lire le dé, et rappelez-lui ses talents.</li>
+        <li>Pas de règle à retenir : si vous avez un doute, demandez au Conteur… ou inventez !</li>
+      </ul>
+    </section>
+
+    <!-- ============ HEROS ============ -->
+    <section id="heros" class="panel">
+      <h1 class="no-print">🧒 Créer un héros</h1>
+      <p class="lead no-print">À faire avec chaque enfant. Ça prend 5 minutes.</p>
+
+      <form id="hero-form" class="hero-form">
+        <div class="form-step">
+          <label for="hero-name">1. Comment s'appelle ton héros ?</label>
+          <input id="hero-name" type="text" maxlength="30" placeholder="Ex. : Lina la Courageuse" required>
+          <label for="hero-player" class="small-label">Prénom du joueur (optionnel)</label>
+          <input id="hero-player" type="text" maxlength="20" placeholder="Ex. : Léo">
+        </div>
+
+        <div class="form-step">
+          <span class="label">2. Qu'est-ce que c'est comme héros ?</span>
+          <div id="hero-types" class="choice-grid"></div>
+        </div>
+
+        <div class="form-step">
+          <span class="label">3. Quel est ton super-talent ⭐ ?</span>
+          <div id="hero-talents" class="choice-grid choice-grid-3"></div>
+        </div>
+
+        <div class="form-step">
+          <span class="label">4. Quel est ton pouvoir magique ? (une fois par aventure)</span>
+          <div id="hero-powers" class="choice-grid"></div>
+        </div>
+
+        <div class="form-step">
+          <label for="hero-item">5. Quel objet emportes-tu toujours avec toi ?</label>
+          <input id="hero-item" type="text" maxlength="40" placeholder="Ex. : une corde magique, un doudou lapin, une lampe…">
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="hero-random">🎲 Au hasard</button>
+          <button type="submit" class="btn btn-big">✅ Enregistrer le héros</button>
+        </div>
+      </form>
+
+      <h2 class="no-print">Nos héros</h2>
+      <p class="hint no-print">Les héros sont enregistrés dans ce navigateur. Imprimez les fiches pour les garder à côté de la table.</p>
+      <div class="print-actions no-print">
+        <button class="btn" id="print-heroes">🖨️ Imprimer les fiches</button>
+      </div>
+      <div id="hero-list" class="hero-list"></div>
+    </section>
+
+    <!-- ============ AVENTURE ============ -->
+    <section id="aventure" class="panel">
+      <h1 class="no-print">🗺️ Générateur d'aventures</h1>
+      <p class="lead no-print">Choisissez un monde et une durée, puis lancez la génération. Chaque aventure a un numéro : notez-le pour la retrouver.</p>
+
+      <div class="generator no-print">
+        <div class="form-step">
+          <span class="label">Le monde</span>
+          <div id="theme-choices" class="choice-grid"></div>
+        </div>
+        <div class="form-step">
+          <span class="label">La durée</span>
+          <div id="length-choices" class="choice-grid choice-grid-3"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-big" id="generate">✨ Générer une aventure</button>
+          <button class="btn btn-ghost" id="print-adventure" hidden>🖨️ Imprimer</button>
+          <button class="btn btn-ghost" id="copy-link" hidden>🔗 Copier le lien</button>
+        </div>
+      </div>
+
+      <div id="adventure-output"></div>
+    </section>
+
+    <!-- ============ DES ============ -->
+    <section id="des" class="panel">
+      <h1>🎲 Lancer de dés</h1>
+      <div class="dice-controls">
+        <div class="form-step">
+          <span class="label">Combien de dés ?</span>
+          <div class="choice-grid choice-grid-3" id="dice-count">
+            <button type="button" class="choice selected" data-value="1"><span class="choice-emoji">🎲</span>1 dé<small>normal</small></button>
+            <button type="button" class="choice" data-value="2"><span class="choice-emoji">🎲🎲</span>2 dés<small>super-talent ou aide</small></button>
+            <button type="button" class="choice" data-value="3"><span class="choice-emoji">🎲🎲🎲</span>3 dés<small>super-talent + aide</small></button>
+          </div>
+        </div>
+        <div class="form-step">
+          <span class="label">C'est difficile comment ?</span>
+          <div class="choice-grid choice-grid-3" id="dice-diff">
+            <button type="button" class="choice" data-value="3"><span class="choice-emoji">🙂</span>Facile<small>3 ou plus</small></button>
+            <button type="button" class="choice selected" data-value="4"><span class="choice-emoji">😮</span>Normal<small>4 ou plus</small></button>
+            <button type="button" class="choice" data-value="5"><span class="choice-emoji">😱</span>Difficile<small>5 ou plus</small></button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-huge" id="roll">🎲 LANCER !</button>
+      <div id="dice-area" class="dice-area" aria-live="polite"></div>
+      <div id="dice-result" class="dice-result" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer no-print">
+    Fait avec ❤️ pour jouer en famille. Aucune donnée n'est envoyée : tout reste dans votre navigateur.
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
