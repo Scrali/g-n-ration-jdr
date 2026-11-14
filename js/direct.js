@@ -207,7 +207,15 @@ function chooseOption(st, index) {
     notes.push("🙂 Après le dernier « oui, mais… », ce défi-ci est plus facile.");
   }
 
-  st.current = { kind: "scene", type, lieu: opt.lieu, defi, difficulte, lire, notes };
+  const scene = { kind: "scene", type, lieu: opt.lieu, defi, difficulte, lire, notes };
+  // Une fois sur deux environ, un moment de suspense avant de révéler le défi
+  if (rng() < 0.55) {
+    const s = pick(rng, SUSPENSES);
+    lire.splice(2, 0, `⏳ ${s}`);
+    st.current = { kind: "suspense", lire: lire.slice(0, 3), conseil: pick(rng, CONSEILS_SUSPENSE), suite: scene };
+  } else {
+    st.current = scene;
+  }
   void theme;
 }
 
@@ -311,7 +319,8 @@ function goFinale(st) {
   if (amis.length) lire.push(`Mais vous n'êtes pas seuls : ${joinList(amis)} arrivent pour vous aider !`);
 
   const facileCoeur = st.secretConnu || st.gentillesse >= 2;
-  st.current = {
+  const rngF = liveRng(st);
+  const finale = {
     kind: "finale",
     lire,
     difficultes: { coeur: facileCoeur ? 3 : 4, malin: 4, force: st.gentillesse === 0 ? 5 : 4 },
@@ -322,6 +331,14 @@ function goFinale(st) {
     ].filter(Boolean),
     essais: [],
   };
+  const s = pick(rngF, SUSPENSES_FINALE);
+  st.current = { kind: "suspense", final: true, lire: [s], conseil: pick(rngF, CONSEILS_SUSPENSE), suite: finale };
+}
+
+function revealSuspense(st) {
+  const c = st.current;
+  if (c.final) st.log.push({ titre: "⏳ Juste avant la fin…", lignes: c.lire, cls: "event" });
+  st.current = c.suite;
 }
 
 function joinList(list) {
@@ -396,6 +413,14 @@ function renderLiveCurrent(st) {
         </button>`).join("")}</div>
     </section>`;
   }
+  if (c.kind === "suspense") {
+    return `<section class="live-current suspense">
+      <h3>⏳ Moment de suspense…</h3>
+      ${lire(c.lire)}
+      <p class="saga-note">🎭 ${escapeHtml(c.conseil)}</p>
+      <div class="live-results"><button class="btn btn-big btn-reveal" data-live="reveal">👀 Révéler !</button></div>
+    </section>`;
+  }
   if (c.kind === "scene") {
     const d = c.defi;
     const boutons = c.type === "rencontre"
@@ -416,7 +441,8 @@ function renderLiveCurrent(st) {
       <div class="live-controls">
         <div class="mini-label">Talent utilisé par les enfants</div>
         ${liveTalentPicker("talent", d.talent)}
-        <div class="mini-label">Résultat</div>
+        ${diceRollerHTML({ target: c.difficulte, apply: "resolve" })}
+        <div class="mini-label">Ou avec votre propre dé, cliquez le résultat :</div>
         <div class="live-results">${boutons.map(([v, l]) => `<button class="btn btn-big" data-live="resolve" data-res="${v}">${l}</button>`).join("")}</div>
       </div>
     </section>`;
@@ -445,6 +471,8 @@ function renderLiveCurrent(st) {
       <div class="live-controls">
         <div class="mini-label">Ce que tentent les enfants</div>
         ${liveTalentPicker("talent", c.essais.includes("coeur") ? "malin" : "coeur", c.difficultes)}
+        ${diceRollerHTML({ target: 4, apply: "finale" })}
+        <div class="mini-label">Ou avec votre propre dé, cliquez le résultat :</div>
         <div class="live-results">
           <button class="btn btn-big" data-live="finale" data-res="crit">🌟 6 !</button>
           <button class="btn btn-big" data-live="finale" data-res="ok">✅ Ça marche !</button>
@@ -570,6 +598,7 @@ function initLive() {
       case "resolve": liveAction((st) => resolveScene(st, btn.dataset.res, talent)); break;
       case "rival": liveAction((st) => resolveRival(st, btn.dataset.res)); break;
       case "finale": liveAction((st) => resolveFinale(st, talent, btn.dataset.res)); break;
+      case "reveal": liveAction((st) => revealSuspense(st)); break;
       case "undo": liveUndo(); break;
       case "quit": {
         const stop = () => { clearLive(); refreshLive(false); };

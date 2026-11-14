@@ -72,7 +72,7 @@ function setSelected(container, value) {
 }
 
 /* ---------------- Onglets ---------------- */
-const TAB_IDS = ["accueil", "regles", "heros", "aventure", "saga"];
+const TAB_IDS = ["accueil", "regles", "heros", "aventure", "saga", "des"];
 
 function showTab(id) {
   if (!TAB_IDS.includes(id)) id = "accueil";
@@ -243,12 +243,21 @@ function renderAdventure(a) {
       ${critLine(defi.texte)}
     </div>`;
 
-  const scenes = a.scenes.map((s) => {
+  const suspenseBlock = (key, list) => `
+      <div class="suspense-box">
+        <span class="label-small">⏳ Moment de suspense</span>
+        <p>${escapeHtml(pickStable(list, key))}</p>
+        <p class="hint">🎭 ${escapeHtml(pickStable(CONSEILS_SUSPENSE, key + "*"))}</p>
+      </div>`;
+
+  const scenes = a.scenes.map((s, idx) => {
+    const sus = idx % 2 === 1 ? suspenseBlock(s.lieu.nom + a.titre, SUSPENSES) : "";
     if (s.type === "rencontre") {
       return `
     <section class="scene">
       <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>
       <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}</div>
+      ${sus}
       <p class="question">💬 <em>Demandez aux enfants : « ${escapeHtml(s.question)} »</em></p>
       ${challenge(s.defis[0], s.difficulte, "🤝 Rencontre")}
       ${note(s.note)}
@@ -261,6 +270,7 @@ function renderAdventure(a) {
     <section class="scene">
       <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>
       <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}</div>
+      ${sus}
       ${challenge(g, s.difficulte, "⚡ Défi")}
       ${note(s.note)}
     </section>`;
@@ -270,6 +280,7 @@ function renderAdventure(a) {
       <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>
       <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}
         Pour continuer, il y a deux chemins possibles…</div>
+      ${sus}
       <p class="question">🔀 <em>Décrivez les deux chemins, puis demandez : « Quel chemin choisissez-vous ? » (On peut voter !)</em></p>
       <div class="paths">
         ${challenge(g, s.difficulte, "⬅️ Chemin 1")}
@@ -341,6 +352,7 @@ function renderAdventure(a) {
 
       <section class="scene finale">
         <h3><span class="scene-num">🏁</span> La grande fin : ${escapeHtml(a.finale.lieu.nom)}</h3>
+        ${suspenseBlock(a.titre + a.finale.lieu.nom, SUSPENSES_FINALE)}
         <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(a.finale.lieu.description)}
           Et là, au milieu, se trouve ${escapeHtml(nomMilieu(m.nom))}, ${escapeHtml(m.description)}. C'est de là que viennent tous les problèmes !</div>
         <p class="question">💬 <em>Demandez aux enfants : « Qu'est-ce que vous faites ? »</em></p>

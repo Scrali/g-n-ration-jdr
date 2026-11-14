@@ -150,6 +150,37 @@ const GAFFES = [
   "Le héros est couvert de boue (ou de sable, ou de neige) de la tête aux pieds : on dirait un monstre !",
 ];
 
+// ⏳ Moments de suspense : on fait durer avant de révéler (jamais effrayant pour de vrai)
+const SUSPENSES = [
+  "Tout à coup… silence. Plus un bruit. Même le vent s'est arrêté. Puis… CRAC ! Quelque chose craque juste derrière vous.",
+  "Vous entendez des pas. Toc… toc… toc… Ils se rapprochent… de plus en plus près…",
+  "Une ombre passe très vite devant vous. Elle était grande ? Petite ? Personne n'a eu le temps de voir.",
+  "Là-bas, au fond, quelque chose brille. Ça clignote… une fois… deux fois… trois fois…",
+  "Le sol se met à trembler tout doucement. Boum… boum… BOUM.",
+  "Une petite voix chuchote vos prénoms. Oui, vos vrais prénoms…",
+  "Le Compagnon se cache derrière vous en tremblant : « Vous… vous avez entendu ça ? »",
+  "Une porte s'ouvre toute seule en grinçant… très… très… lentement.",
+  "Deux petits yeux brillent dans le noir. Ils clignent. Ils vous regardent.",
+  "Ça sent bizarre, tout à coup. Ça sent… la chaussette ? Non… la crêpe ?",
+  "Les buissons bougent. Quelque chose est caché dedans… et ça bouge encore.",
+  "Un drôle de bruit monte : « Hmmmmmmm… » C'est un ronflement ? Un chant ? Un ventre qui gargouille ?",
+];
+
+const SUSPENSES_FINALE = [
+  "Les héros arrivent devant l'entrée. Tout est calme… trop calme. Le cœur de chacun bat très fort : boum-boum, boum-boum. Qui ose entrer en premier ?",
+  "Plus vous approchez, plus il fait sombre. Vous entendez une respiration… lente… profonde… Qui va passer la tête pour regarder ?",
+  "Une grande ombre se dessine au loin. Elle bouge. Elle se retourne… Avant de la voir, chacun dit à voix haute une chose qui le rend courageux.",
+];
+
+const CONSEILS_SUSPENSE = [
+  "Baissez la voix jusqu'au chuchotement, puis faites une pause de 3 secondes.",
+  "Demandez aux enfants : « À votre avis, qu'est-ce que c'est ? » Laissez-les deviner avant de révéler.",
+  "Tapotez lentement sur la table avec les doigts pour faire les pas ou le cœur qui bat.",
+  "Faites durer : « Ça s'approche… ça s'approche… ça s'approche… » puis révélez d'un coup !",
+  "Si vous pouvez, baissez un peu la lumière pendant ce moment (et rallumez après !).",
+  "Regardez chaque enfant dans les yeux, sans rien dire, deux secondes. Puis continuez tout bas.",
+];
+
 // Choix stable (toujours le même pour un même défi) pour les aventures préparées
 function pickStable(list, key) {
   let h = 0;
@@ -198,6 +229,9 @@ const ALEAS = {
   objet() { return { texte: `Les héros trouvent ${rnd(OBJETS_TROUVES)}.` }; },
   consequence() { return { texte: rnd(CONSEQUENCES) }; },
   coupDePouce() { return { texte: rnd(COUPS_DE_POUCE) }; },
+  suspense(theme) {
+    return { titre: "Moment de suspense", texte: `${rnd(SUSPENSES)} 🎭 Conseil : ${rnd(CONSEILS_SUSPENSE)}` };
+  },
   critique() { return { titre: "Réussite critique !", texte: `${rnd(CRITIQUES)} Le héros gagne une ✨ étoile.`, cls: "yes" }; },
   gaffe() { return { titre: "Catastrophe rigolote !", texte: `${rnd(GAFFES)} Pour son courage, le héros gagne quand même une ✨ étoile.`, cls: "no" }; },
 };
@@ -208,6 +242,7 @@ const ALEAS_BOUTONS = [
   { id: "personnage", nom: "Personnage", emoji: "🧑", aide: "Quelqu'un que les héros rencontrent" },
   { id: "choix", nom: "Choix", emoji: "🔀", aide: "Proposer deux chemins aux enfants" },
   { id: "objet", nom: "Objet trouvé", emoji: "🎁", aide: "Une récompense ou un indice" },
+  { id: "suspense", nom: "Suspense", emoji: "⏳", aide: "Faire monter la tension avant une révélation" },
   { id: "critique", nom: "Réussite critique", emoji: "🌟", aide: "Le dé fait 6" },
   { id: "gaffe", nom: "Catastrophe rigolote", emoji: "🙈", aide: "Le dé fait 1" },
   { id: "consequence", nom: "Oui, mais…", emoji: "🌀", aide: "Après un dé raté (2 ou 3)" },
