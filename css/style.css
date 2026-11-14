@@ -499,3 +499,61 @@ input[type="text"]:focus { outline: none; border-color: var(--primary); }
   .panel.active { animation: none; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---------- Saga ---------- */
+.saga-list { display: grid; gap: 10px; }
+.saga-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--paper); border-radius: 14px; padding: 12px 16px; box-shadow: var(--shadow); }
+.saga-item small { color: var(--muted); }
+.hero-checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.hero-check { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border: 2px solid var(--line); border-radius: 12px; cursor: pointer; font-weight: 600; }
+.import-label { cursor: pointer; }
+.saga-header {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px;
+  padding: 18px 20px; border-radius: var(--radius);
+  background: linear-gradient(135deg, #e6dcff, #ffe3c2); margin-bottom: 12px;
+}
+.saga-header h2 { margin: 0; font-size: 1.8rem; }
+.saga-header .hint { margin: 4px 0 0; }
+.saga-progress { margin: 6px 0 0; font-size: 1.4rem; }
+.saga-progress small { font-size: 0.85rem; color: var(--muted); vertical-align: middle; }
+.piece { filter: grayscale(1); opacity: 0.3; }
+.piece.got { filter: none; opacity: 1; }
+.saga-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.saga-tools select { font: inherit; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--line); background: #fff; }
+.subtabs { display: flex; gap: 8px; margin: 12px 0 16px; flex-wrap: wrap; }
+.subtab { border: 2px solid var(--line); background: var(--paper); border-radius: 999px; padding: 8px 16px; font-family: "Fredoka", sans-serif; font-size: 1rem; cursor: pointer; color: var(--ink); }
+.subtab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.saga-next { text-align: center; background: var(--paper); border-radius: var(--radius); padding: 30px 20px; box-shadow: var(--shadow); }
+.saga-done .big-emoji { font-size: 4rem; }
+.saga-note { background: #fff6d6; border-radius: 10px; padding: 8px 12px; margin: 10px 0 0; font-size: 0.95rem; }
+.scene.recap { background: #f6f1ff; }
+
+.bilan { margin-top: 24px; padding: 18px; border: 3px dashed var(--purple); border-radius: var(--radius); }
+.bilan h2 { margin-top: 0; }
+.bilan-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.bilan-row:last-child { border-bottom: none; }
+.radio-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.radio-pill { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border: 2px solid var(--line); border-radius: 999px; cursor: pointer; background: #fff; font-size: 0.95rem; }
+.radio-pill:has(input:checked) { border-color: var(--primary); background: #fff1ea; }
+.bilan textarea, .carnet-add input {
+  width: 100%; font: inherit; padding: 8px 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--bg);
+}
+.bilan .exploit { margin-bottom: 6px; }
+
+.carnet { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.carnet-box { background: var(--paper); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+.carnet-wide { grid-column: 1 / -1; }
+.carnet-list { list-style: none; padding: 0; margin: 0 0 8px; }
+.carnet-list li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dotted var(--line); }
+.carnet-list small { color: var(--muted); }
+.carnet-list .x { border: none; background: none; color: var(--muted); cursor: pointer; }
+.carnet-add { display: flex; gap: 6px; }
+
+.livre { background: #fffdf6; border-radius: var(--radius); padding: 28px clamp(16px, 5vw, 48px); box-shadow: var(--shadow); font-size: 1.08rem; }
+.livre h2 { text-align: center; margin-top: 0; font-size: 2rem; }
+.livre-heroes { text-align: center; color: var(--muted); font-style: italic; }
+.livre-ep { margin-top: 24px; break-inside: avoid-page; }
+.livre-ep h3 { font-size: 1.35rem; border-bottom: 2px solid var(--yellow); padding-bottom: 4px; }
+.livre-monde { color: var(--muted); margin-top: 0; }
+.livre-fin { text-align: center; font-family: "Fredoka", sans-serif; font-size: 1.4rem; margin-top: 24px; }
+@media print { .saga-header { background: none; border: 1px solid #ccc; } .livre { box-shadow: none; } }

@@ -42,7 +42,7 @@ function setSelected(container, value) {
 }
 
 /* ---------------- Onglets ---------------- */
-const TAB_IDS = ["accueil", "regles", "heros", "aventure"];
+const TAB_IDS = ["accueil", "regles", "heros", "aventure", "saga"];
 
 function showTab(id) {
   if (!TAB_IDS.includes(id)) id = "accueil";
@@ -187,7 +187,8 @@ function diffBadge(n) {
 
 function renderAdventure(a) {
   const m = a.finale.mechant;
-  const heroes = loadHeroes();
+  const heroes = a.heroes || loadHeroes();
+  const note = (t) => (t ? `<p class="saga-note">${escapeHtml(t)}</p>` : "");
 
   const challenge = (defi, difficulte, titre) => `
     <div class="challenge">
@@ -209,6 +210,7 @@ function renderAdventure(a) {
       <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}</div>
       <p class="question">💬 <em>Demandez aux enfants : « ${escapeHtml(s.question)} »</em></p>
       ${challenge(s.defis[0], s.difficulte, "🤝 Rencontre")}
+      ${note(s.note)}
       <p class="hint">Les enfants peuvent aussi choisir de ne pas aider… Dans ce cas, pas d'indice : ils devront le trouver plus tard (tirez un 💡 Coup de pouce).</p>
     </section>`;
     }
@@ -223,6 +225,7 @@ function renderAdventure(a) {
         ${challenge(g, s.difficulte, "⬅️ Chemin 1")}
         ${challenge(d, s.difficulte, "➡️ Chemin 2")}
       </div>
+      ${note(s.note)}
       <p class="hint">Le talent indiqué est un conseil : si un enfant a une autre bonne idée, il lance avec son talent à lui.</p>
     </section>`;
   }).join("");
@@ -231,6 +234,7 @@ function renderAdventure(a) {
     <section class="scene twist">
       <h3><span class="scene-num">!</span> Rebondissement</h3>
       <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(a.rebondissement)}</div>
+      ${note(a.rebondissementNote)}
       <p class="hint">À placer quand vous voulez (souvent juste avant la fin). Laissez les enfants trouver une solution, puis faites lancer un dé si besoin.</p>
     </section>` : "";
 
@@ -250,7 +254,9 @@ function renderAdventure(a) {
         <div>
           <p class="adv-world">${escapeHtml(a.theme.nom)} · ${a.length.emoji} ${escapeHtml(a.length.nom)} (${escapeHtml(a.length.desc)})</p>
           <h2>${escapeHtml(a.titre)}</h2>
-          <p class="adv-code">Aventure n° <code>${escapeHtml(a.code)}</code></p>
+          ${a.saga
+            ? `<p class="adv-code">📚 ${escapeHtml(a.saga.titre)} · Épisode ${a.saga.numero} sur ${a.saga.total}</p>`
+            : `<p class="adv-code">Aventure n° <code>${escapeHtml(a.code)}</code></p>`}
         </div>
       </header>
 
@@ -260,12 +266,21 @@ function renderAdventure(a) {
           Mais en vrai, <strong>${escapeHtml(m.raison)}</strong>. Les héros pourront le découvrir pendant l'aventure.</p>
         <p>🦉 <strong>Compagnon suggéré pour Maman :</strong> ${escapeHtml(a.compagnon)}.</p>
         ${heroList}
+        ${(a.gmExtra || []).map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
         <p>🎒 Préparez : un dé, 3 jetons-cœurs et des jetons-étoiles par enfant, la carte « Pause ».</p>
       </section>
+
+      ${a.recap ? `
+      <section class="scene recap">
+        <h3><span class="scene-num">📺</span> Précédemment…</h3>
+        <div class="read-aloud"><span class="label-small">📖 À lire</span>${a.recap.map(escapeHtml).join("<br>")}</div>
+        <p class="hint">Demandez aux enfants ce dont ils se souviennent : ils adorent raconter à leur tour !</p>
+      </section>` : ""}
 
       <section class="scene intro">
         <h3><span class="scene-num">🌅</span> Le début de l'histoire</h3>
         <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(a.intro.ambiance)}</div>
+        ${(a.intro.avant || []).map((t) => `<div class="read-aloud">${escapeHtml(t)}</div>`).join("")}
         <div class="read-aloud">${escapeHtml(a.intro.texte)}</div>
         <div class="read-aloud">${escapeHtml(a.intro.appel)}</div>
         <p class="hint">Laissez chaque enfant présenter son héros en une phrase (« Je suis Lina, une fée, et je suis super forte ! »). Le Compagnon se présente aussi.</p>
@@ -277,12 +292,13 @@ function renderAdventure(a) {
       <section class="scene finale">
         <h3><span class="scene-num">🏁</span> La grande fin : ${escapeHtml(a.finale.lieu.nom)}</h3>
         <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(a.finale.lieu.description)}
-          Et là, au milieu, se trouve ${escapeHtml(m.nom)}, ${escapeHtml(m.description)}. C'est de là que viennent tous les problèmes !</div>
+          Et là, au milieu, se trouve ${escapeHtml(nomMilieu(m.nom))}, ${escapeHtml(m.description)}. C'est de là que viennent tous les problèmes !</div>
         <p class="question">💬 <em>Demandez aux enfants : « Qu'est-ce que vous faites ? »</em></p>
         <div class="challenge">
           <div class="challenge-head"><strong>🏆 Le défi final</strong> ${diffBadge(a.finale.difficulte)}</div>
           <p>Le secret : <strong>${escapeHtml(m.raison)}</strong>. Les enfants peuvent s'en sortir de plusieurs façons :</p>
           <ul class="solutions">${solutions}</ul>
+          ${note(a.finale.note)}
           <p class="hint">Toute bonne idée des enfants marche ! Si leur solution utilise le Cœur (comprendre, consoler, se faire un ami), rendez-la <strong>facile (3 ou plus)</strong>. Chaque héros peut aider : c'est le bon moment pour utiliser les pouvoirs magiques. Si le dé rate, ce n'est pas perdu : le méchant hésite, et on peut réessayer autrement (tirez un 🌀 « Oui, mais… » dans la boîte à imprévus).</p>
         </div>
       </section>
@@ -290,6 +306,7 @@ function renderAdventure(a) {
       <section class="scene ending">
         <h3><span class="scene-num">🎉</span> Victoire !</h3>
         <div class="read-aloud"><span class="label-small">📖 À lire</span>Grâce à vous, tout est rentré dans l'ordre ! Pour vous remercier, vous recevez ${escapeHtml(a.tresor)}.</div>
+        ${(a.fin || []).map((t) => `<div class="read-aloud">${escapeHtml(t)}</div>`).join("")}
         <div class="pride">
           <strong>⭐ Le moment de fierté</strong>
           <p>Chacun à son tour (adultes compris) dit : <em>ce que son héros a fait de mieux</em> et <em>ce qu'il a préféré dans l'histoire</em>. Donnez une dernière étoile à chacun.</p>

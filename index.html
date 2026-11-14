@@ -18,6 +18,7 @@
       <a href="#regles" data-tab="regles">📜 Règles</a>
       <a href="#heros" data-tab="heros">🧒 Héros</a>
       <a href="#aventure" data-tab="aventure">🗺️ Aventure</a>
+      <a href="#saga" data-tab="saga">📚 Saga</a>
     </nav>
   </header>
 
@@ -28,7 +29,8 @@
         <h1>Des aventures à raconter ensemble</h1>
         <p>Un jeu de rôle tout simple pour jouer en famille, pensé pour des enfants de <strong>5 et 8 ans</strong>.
           Un parent raconte, les enfants décident, un dé fait le reste.</p>
-        <a class="btn btn-big" href="#aventure">🗺️ Créer une aventure</a>
+        <a class="btn btn-big" href="#aventure">🗺️ Une aventure</a>
+        <a class="btn btn-big btn-ghost" href="#saga">📚 Une saga en épisodes</a>
       </div>
 
       <h2>Un jeu de rôle, c'est quoi ?</h2>
@@ -247,6 +249,12 @@
       <div id="adventure-output"></div>
     </section>
 
+    <!-- ============ SAGA ============ -->
+    <section id="saga" class="panel">
+      <h1 class="no-print">📚 Saga en plusieurs épisodes</h1>
+      <p class="lead no-print">Une grande histoire qui se joue en plusieurs soirées. Après chaque épisode, vous notez en 2 minutes ce qui s'est passé : les amis rencontrés reviennent, les rivaux aussi, les objets restent dans le sac, et les idées des enfants sont réutilisées. L'histoire s'écrit au fur et à mesure dans le <strong>Livre de la Saga</strong>.</p>
+      <div id="saga-root"></div>
+    </section>
   </main>
 
 
@@ -290,6 +298,8 @@
   <script src="js/data.js"></script>
   <script src="js/aleas.js"></script>
   <script src="js/generator.js"></script>
+  <script src="js/saga-data.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/saga.js"></script>
 </body>
 </html>

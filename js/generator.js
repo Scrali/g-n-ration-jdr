@@ -47,8 +47,9 @@ const DIFFICULTES = {
   5: { nom: "Difficile", texte: "5 ou plus" },
 };
 
-function generateAdventure(themeId, lengthId, seed) {
-  const theme = THEMES.find((t) => t.id === themeId) || THEMES[0];
+// themeOverride permet à la saga d'ajouter des défis communs au monde
+function generateAdventure(themeId, lengthId, seed, themeOverride) {
+  const theme = themeOverride || THEMES.find((t) => t.id === themeId) || THEMES[0];
   const length = LENGTHS.find((l) => l.id === lengthId) || LENGTHS[0];
   const rng = makeRng(seed);
 
@@ -110,6 +111,19 @@ function generateAdventure(themeId, lengthId, seed) {
     },
     tresor,
   };
+}
+
+// « Le Géant Bobo » en milieu de phrase → « le Géant Bobo »
+function nomMilieu(nom) {
+  return nom.replace(/^(Le|La|Les) /, (m) => m.toLowerCase());
+}
+
+// « de » + nom : « du jeune page », « des Trois Compsognathes », « de Méduséa »
+function deNom(nom) {
+  const n = nomMilieu(nom);
+  if (n.startsWith("le ")) return `du ${n.slice(3)}`;
+  if (n.startsWith("les ")) return `des ${n.slice(4)}`;
+  return `de ${n}`;
 }
 
 function randomSeed() {
