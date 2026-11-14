@@ -598,3 +598,10 @@ details.gm-box summary { cursor: pointer; font-family: "Fredoka", sans-serif; fo
 /* Encoches et barres système des téléphones */
 .site-header { top: env(safe-area-inset-top, 0px); }
 .fab { right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+
+/* ---------- 6 et 1 ---------- */
+.crits { margin-top: 8px; display: grid; gap: 4px; font-size: 0.92rem; }
+.crits p { margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--paper); border: 1px dashed var(--line); }
+.crits em { color: var(--muted); white-space: nowrap; }
+.rule-crit .rule-num { width: auto; padding: 0 10px; border-radius: 999px; font-size: 1rem; }
+.aleas-buttons .alea-btn:last-child:nth-child(odd) { grid-column: 1 / -1; }

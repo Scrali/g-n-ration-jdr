@@ -121,6 +121,42 @@ const COUPS_DE_POUCE = [
   "Changez de héros : demandez à un autre enfant ce que son héros remarque.",
 ];
 
+// 🌟 Un 6 au dé : réussite critique (le héros gagne aussi une étoile)
+const CRITIQUES = [
+  "C'est tellement réussi que tout le monde applaudit, même les oiseaux.",
+  "En plus, le héros trouve un petit trésor caché juste à côté : un objet de plus dans le sac 🎒.",
+  "C'est fait avec tellement de style que le héros gagne un surnom. Demandez aux enfants lequel !",
+  "En plus, un indice important apparaît juste devant les héros.",
+  "Ça marche si bien que toute l'équipe récupère 1 ❤️.",
+  "Un petit animal a tout vu et décide de suivre les héros pour les aider.",
+  "Le héros découvre un raccourci : on arrive plus vite au prochain endroit.",
+  "C'est si impressionnant que le prochain défi sera facile (3 ou plus).",
+  "Le Compagnon est tellement épaté qu'il reste bouche bée… puis fait une danse de la victoire.",
+  "Une pluie de paillettes tombe du ciel. Personne ne sait d'où elle vient, mais c'est magnifique.",
+];
+
+// 🙈 Un 1 au dé : catastrophe rigolote (drôle, jamais grave ; le héros gagne une étoile de courage)
+const GAFFES = [
+  "Le héros glisse, fait trois roulades et atterrit la tête dans un buisson. Seules ses jambes dépassent !",
+  "Le héros éternue si fort que son chapeau (ou ses chaussures) s'envole au loin.",
+  "Le héros se prend les pieds dans sa cape et tombe sur le Compagnon, qui fait « Pouic ! »",
+  "Au lieu de ça, le héros se met à chanter très faux, et tout le monde se bouche les oreilles.",
+  "Le héros se trompe complètement de direction et part très fièrement… dans le mauvais sens.",
+  "Le pantalon du héros reste accroché à une branche : il finit la scène en caleçon à pois !",
+  "Le héros fait par accident un énorme bruit de prout. Plus personne n'arrive à rester sérieux.",
+  "Le héros reste coincé dans un trou trop petit, les fesses en l'air. Il faut tirer tous ensemble !",
+  "Un oiseau prend les cheveux du héros pour un nid et s'y installe confortablement.",
+  "Le héros se cogne et voit des petites étoiles tourner autour de sa tête pendant un moment.",
+  "Le héros est couvert de boue (ou de sable, ou de neige) de la tête aux pieds : on dirait un monstre !",
+];
+
+// Choix stable (toujours le même pour un même défi) pour les aventures préparées
+function pickStable(list, key) {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return list[h % list.length];
+}
+
 /* ---------------- Tirages ---------------- */
 function rnd(list) { return list[Math.floor(Math.random() * list.length)]; }
 
@@ -162,6 +198,8 @@ const ALEAS = {
   objet() { return { texte: `Les héros trouvent ${rnd(OBJETS_TROUVES)}.` }; },
   consequence() { return { texte: rnd(CONSEQUENCES) }; },
   coupDePouce() { return { texte: rnd(COUPS_DE_POUCE) }; },
+  critique() { return { titre: "Réussite critique !", texte: `${rnd(CRITIQUES)} Le héros gagne une ✨ étoile.`, cls: "yes" }; },
+  gaffe() { return { titre: "Catastrophe rigolote !", texte: `${rnd(GAFFES)} Pour son courage, le héros gagne quand même une ✨ étoile.`, cls: "no" }; },
 };
 
 const ALEAS_BOUTONS = [
@@ -170,6 +208,8 @@ const ALEAS_BOUTONS = [
   { id: "personnage", nom: "Personnage", emoji: "🧑", aide: "Quelqu'un que les héros rencontrent" },
   { id: "choix", nom: "Choix", emoji: "🔀", aide: "Proposer deux chemins aux enfants" },
   { id: "objet", nom: "Objet trouvé", emoji: "🎁", aide: "Une récompense ou un indice" },
-  { id: "consequence", nom: "Oui, mais…", emoji: "🌀", aide: "Après un dé raté (1, 2 ou 3)" },
+  { id: "critique", nom: "Réussite critique", emoji: "🌟", aide: "Le dé fait 6" },
+  { id: "gaffe", nom: "Catastrophe rigolote", emoji: "🙈", aide: "Le dé fait 1" },
+  { id: "consequence", nom: "Oui, mais…", emoji: "🌀", aide: "Après un dé raté (2 ou 3)" },
   { id: "coupDePouce", nom: "Coup de pouce", emoji: "💡", aide: "Les enfants ne savent plus quoi faire" },
 ];

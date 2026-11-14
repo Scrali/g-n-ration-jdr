@@ -207,6 +207,14 @@ const SEUILS = {
   5: { ok: "5, 6", rate: "1, 2, 3, 4" },
 };
 
+// Ligne « 6 / 1 » sous chaque défi
+function critLine(key) {
+  return `<div class="crits">
+    <p><strong>🌟 6, réussite critique :</strong> ça marche, et en plus… ${escapeHtml(pickStable(CRITIQUES, key))} <em>+1 ✨</em></p>
+    <p><strong>🙈 1, catastrophe rigolote :</strong> ${escapeHtml(pickStable(GAFFES, key + "!"))} <em>+1 ✨ de courage</em></p>
+  </div>`;
+}
+
 function talentBadge(id) {
   const t = TALENTS[id];
   return `<span class="badge badge-${id}">${t.emoji} ${t.nom}</span>`;
@@ -232,6 +240,7 @@ function renderAdventure(a) {
         <div class="outcome ok"><strong>✅ ${SEUILS[difficulte].ok} : ça marche</strong><p>${escapeHtml(defi.reussite)}</p></div>
         <div class="outcome oops"><strong>🌀 ${SEUILS[difficulte].rate} : oui, mais…</strong><p>${escapeHtml(defi.rate)}</p></div>
       </div>
+      ${critLine(defi.texte)}
     </div>`;
 
   const scenes = a.scenes.map((s) => {

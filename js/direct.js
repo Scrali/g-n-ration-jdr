@@ -214,6 +214,10 @@ function chooseOption(st, index) {
 function resolveScene(st, res, talent) {
   const sc = st.current;
   const rng = liveRng(st);
+  // 🌟 6 = réussite + bonus ; 🙈 1 = « oui, mais… » + gaffe rigolote. Une étoile dans les deux cas.
+  let crit = null;
+  if (res === "crit") { crit = "crit"; res = "ok"; }
+  else if (res === "fumble") { crit = "fumble"; res = "oops"; }
   const theme = liveTheme(st);
   const d = sc.defi;
   const lignes = sc.lire.slice();
@@ -245,8 +249,10 @@ function resolveScene(st, res, talent) {
       }
     }
   }
+  if (crit === "crit") lignes.push(`🌟 Réussite critique ! ${pick(rng, CRITIQUES)} Le héros gagne une ✨ étoile.`);
+  if (crit === "fumble") lignes.push(`🙈 Catastrophe rigolote ! ${pick(rng, GAFFES)} Pour son courage, le héros gagne quand même une ✨ étoile.`);
   const restantes = st.nbScenes - st.step;
-  if (res === "ok" && st.indices.length && (rng() < 0.5 || restantes <= st.indices.length - 1)) {
+  if (res === "ok" && st.indices.length && (crit === "crit" || rng() < 0.5 || restantes <= st.indices.length - 1)) {
     effets.push(`🔎 Indice : ${st.indices.shift()}`);
   }
 
@@ -326,9 +332,13 @@ function joinList(list) {
 function resolveFinale(st, talent, res) {
   const m = st.mechant;
   const sol = m.solutions[talent];
-  if (res === "oops") {
+  const rng = liveRng(st);
+  if (res === "oops" || res === "fumble") {
     st.current.essais.push(talent);
-    st.log.push({ titre: "🌀 Pas encore…", lignes: [`Les héros essaient : ${sol.charAt(0).toLowerCase() + sol.slice(1)} ${capFirst(nomMilieu(m.nom))} hésite… Ça n'a pas encore marché. Essayez autre chose !`], cls: "event" });
+    const lignes = [`Les héros essaient : ${sol.charAt(0).toLowerCase() + sol.slice(1)}`];
+    if (res === "fumble") lignes.push(`🙈 Catastrophe rigolote ! ${pick(rng, GAFFES)} Même ${nomMilieu(m.nom)} ne peut pas s'empêcher de rire. Pour son courage, le héros gagne une ✨ étoile.`);
+    lignes.push(`${capFirst(nomMilieu(m.nom))} hésite… Ça n'a pas encore marché. Essayez encore !`);
+    st.log.push({ titre: res === "fumble" ? "🙈 Oups…" : "🌀 Pas encore…", lignes, cls: "event" });
     return;
   }
   st.record.finale = talent;
@@ -336,6 +346,7 @@ function resolveFinale(st, talent, res) {
   lignes.push(talent === "coeur"
     ? `${capFirst(nomMilieu(m.nom))} et les héros sont devenus amis.`
     : "Les héros l'ont emporté !");
+  if (res === "crit") lignes.push("🌟 Réussite critique ! C'est la plus belle victoire qu'on ait jamais vue : tout le monde applaudit, et une pluie d'étoiles tombe du ciel. Chaque héros gagne une ✨ étoile.");
   st.log.push({ titre: `🏁 ${st.finaleLieu.nom}`, lignes });
   const finLignes = [`Grâce à vous, tout est rentré dans l'ordre ! Pour vous remercier, vous recevez ${st.tresor}.`]
     .concat(st.ctx && st.ctx.fin ? st.ctx.fin : []);
@@ -388,8 +399,8 @@ function renderLiveCurrent(st) {
   if (c.kind === "scene") {
     const d = c.defi;
     const boutons = c.type === "rencontre"
-      ? [["ok", "✅ Aidé"], ["oops", "🌀 Aidé, mais…"], ["non", "🚶 Pas aidé"]]
-      : [["ok", "✅ Réussi"], ["oops", "🌀 Oui, mais…"]];
+      ? [["crit", "🌟 6 !"], ["ok", "✅ Aidé"], ["oops", "🌀 Aidé, mais…"], ["fumble", "🙈 1 !"], ["non", "🚶 Pas aidé"]]
+      : [["crit", "🌟 6 !"], ["ok", "✅ Réussi"], ["oops", "🌀 Oui, mais…"], ["fumble", "🙈 1 !"]];
     return `<section class="live-current">
       <h3>📍 ${escapeHtml(c.lieu.nom)} ${c.type === "rencontre" ? "· 🤝 Rencontre" : ""}</h3>
       ${lire(c.lire)}
@@ -399,6 +410,7 @@ function renderLiveCurrent(st) {
           <div class="outcome ok"><strong>✅ ${SEUILS[c.difficulte].ok} : ça marche</strong><p>${escapeHtml(d.reussite)}</p></div>
           <div class="outcome oops"><strong>🌀 ${SEUILS[c.difficulte].rate} : oui, mais…</strong><p>${escapeHtml(d.rate)}</p></div>
         </div>
+        <p class="hint">🌟 Sur un 6 : réussite critique, avec un bonus et une étoile. 🙈 Sur un 1 : catastrophe rigolote, avec une étoile de courage. Le site invente la suite.</p>
       </div>
       ${notes(c.notes)}
       <div class="live-controls">
@@ -434,8 +446,10 @@ function renderLiveCurrent(st) {
         <div class="mini-label">Ce que tentent les enfants</div>
         ${liveTalentPicker("talent", c.essais.includes("coeur") ? "malin" : "coeur", c.difficultes)}
         <div class="live-results">
+          <button class="btn btn-big" data-live="finale" data-res="crit">🌟 6 !</button>
           <button class="btn btn-big" data-live="finale" data-res="ok">✅ Ça marche !</button>
           <button class="btn btn-big btn-ghost" data-live="finale" data-res="oops">🌀 Pas encore</button>
+          <button class="btn btn-big btn-ghost" data-live="finale" data-res="fumble">🙈 1 !</button>
         </div>
       </div>
     </section>`;
