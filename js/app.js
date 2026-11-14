@@ -215,6 +215,15 @@ function renderAdventure(a) {
     </section>`;
     }
     const [g, d] = s.defis;
+    if (!d) {
+      return `
+    <section class="scene">
+      <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>
+      <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}</div>
+      ${challenge(g, s.difficulte, "⚡ Défi")}
+      ${note(s.note)}
+    </section>`;
+    }
     return `
     <section class="scene">
       <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>

@@ -287,6 +287,11 @@ function episodeStory(saga, ep) {
   const b = ep.bilan;
   const final = ep.numero === saga.nbEpisodes;
   const p = [];
+  if (a.recit) {
+    p.push(...a.recit);
+    storyExtras(saga, ep, b, p);
+    return { titre: `Épisode ${ep.numero} : ${a.titre}`, monde: `${a.theme.emoji} ${a.theme.nom} · joué en direct`, paragraphes: p };
+  }
   if (ep.numero === 1) p.push(def.intro);
   (a.intro.avant || []).forEach((t) => { if (t !== def.intro) p.push(t); });
   p.push(a.intro.texte);
@@ -312,11 +317,106 @@ function episodeStory(saga, ep) {
   p.push(`🎁 ${cap(a.tresor)}.`);
   if (!final) p.push(`🧩 ${cap(def.fragment)}, avec un indice : ${def.indices[(ep.numero - 1) % def.indices.length]}`);
   else p.push(`🌟 ${cap(def.artefact)} brille à nouveau. Fin de la saga !`);
+  storyExtras(saga, ep, b, p);
+  return { titre: `Épisode ${ep.numero} : ${a.titre}`, monde: `${a.theme.emoji} ${a.theme.nom}`, paragraphes: p };
+}
+
+function storyExtras(saga, ep, b, p) {
   saga.exploits.filter((e) => e.episode === ep.numero).forEach((e) => p.push(`⭐ ${e.hero} : ${e.texte}`));
   const inv = saga.inventions.filter((e) => e.episode === ep.numero).map((e) => e.texte);
   if (inv.length) p.push(`✨ Inventé par les enfants : ${inv.join(" ; ")}`);
   if (b.notes) p.push(`📝 ${b.notes}`);
-  return { titre: `Épisode ${ep.numero} : ${a.titre}`, monde: `${a.theme.emoji} ${a.theme.nom}`, paragraphes: p };
+}
+
+/* ---------------- Épisode joué en direct ---------------- */
+function sagaLiveContext(saga) {
+  const def = sagaDef(saga);
+  const n = saga.episodes.length + 1;
+  const total = saga.nbEpisodes;
+  const final = n === total;
+  const themeId = saga.route[(n - 1) % saga.route.length];
+  const theme = THEMES.find((t) => t.id === themeId);
+  const rng = makeRng(saga.seed + n * 2027);
+  const monde = `« ${theme.nom} »`;
+  const ctx = {
+    sagaId: saga.id, numero: n, total, final, themeId,
+    heroes: saga.heroes,
+    allies: saga.allies.map((x) => x.nom),
+    sac: saga.sac.slice(),
+    inventions: saga.inventions.map((x) => x.texte),
+    recap: n > 1 ? buildRecap(saga) : null,
+    gmExtra: [`📚 Le secret de la saga : le Grand Méchant est ${def.grandMechant.nom}. En vrai, ${def.grandMechant.raison}.`],
+  };
+  if (n === 1) {
+    ctx.introAvant = [def.intro].concat(saga.mode === "voyage" ? [`Votre voyage commence dans le monde de ${monde}.`] : []);
+  } else if (!final) {
+    ctx.introAvant = [saga.mode === "voyage"
+      ? `Votre quête pour réparer ${def.artefact} vous mène cette fois dans le monde de ${monde} !`
+      : `Votre quête continue : il faut encore trouver de quoi réparer ${def.artefact}.`];
+    if (saga.allies.length && rng() < 0.5) ctx.ami = pick(rng, saga.allies);
+    if (saga.rivaux.length && rng() < 0.6) ctx.rival = pick(rng, saga.rivaux).nom;
+  }
+  if (final) {
+    ctx.titre = `${def.titre} : la grande fin`;
+    ctx.introAvant = [`Grâce à tous les indices, vous savez enfin qui est derrière tout ça ! Vous avez tous les morceaux : il ne reste qu'à rejoindre ${nomMilieu(def.finaleLieu.nom)}.`];
+    ctx.introTexte = `Mais pour y arriver, il faut d'abord traverser le monde de ${monde}. Ce sera votre plus grande aventure !`;
+    ctx.mechant = def.grandMechant;
+    ctx.finaleLieu = def.finaleLieu;
+    ctx.tresor = "le titre de Héros Légendaires, et une fête immense en leur honneur";
+    ctx.fin = [`Tous les morceaux se rassemblent dans un grand éclair de lumière : ${def.artefact} brille à nouveau !`,
+      "C'est la fin de la saga. Vous êtes maintenant des héros légendaires, et on racontera votre histoire pendant très, très longtemps."];
+  } else {
+    ctx.gmExtra.push(`🧩 À la fin, les héros trouvent ${def.fragment} (${n} sur ${total - 1}) et un indice sur le Grand Méchant.`);
+    ctx.fin = [`Et ce n'est pas tout : au milieu du trésor, vous trouvez ${def.fragment} ! (${n} sur ${total - 1})`,
+      `Indice : ${def.indices[(n - 1) % def.indices.length]}`,
+      n === total - 1 ? "Vous avez tous les morceaux ! Avec les indices, vous comprenez enfin où aller… La suite au prochain épisode !"
+        : "Mais qui a bien pu faire ça ? La suite au prochain épisode !"];
+  }
+  return ctx;
+}
+
+function finishLiveSaga(st, extras) {
+  const store = loadSagaStore();
+  const saga = store.sagas.find((x) => x.id === st.ctx.sagaId);
+  if (!saga) { clearLive(); renderSaga(); return; }
+  const theme = THEMES.find((t) => t.id === st.themeId);
+  const a = {
+    titre: st.titre,
+    theme: st.themeId,
+    length: st.lengthId,
+    code: `direct-${st.seed}`,
+    intro: { ambiance: theme.ambiance, avant: st.ctx.introAvant || [], texte: st.introLignes[st.introLignes.length - 2], appel: st.introLignes[st.introLignes.length - 1] },
+    compagnon: st.compagnon,
+    scenes: st.record.scenes.map((r, i) => ({ numero: i + 1, type: r.type, lieu: r.lieu, defis: [r.defi], difficulte: r.difficulte, question: "Qu'est-ce que vos héros font ?" })),
+    rebondissement: st.record.rival ? `Revoilà ${nomMilieu(st.ctx.rival)} !` : null,
+    rivalRetour: st.record.rival ? st.ctx.rival : undefined,
+    finale: { lieu: st.finaleLieu, mechant: st.mechant, difficulte: 4 },
+    tresor: st.tresor,
+    saga: { titre: saga.titre, numero: st.ctx.numero, total: st.ctx.total },
+    heroes: saga.heroes,
+    fin: st.ctx.fin,
+    recit: st.log.filter((e) => e.cls !== "recap").flatMap((e) => [e.titre].concat(e.lignes)),
+  };
+  const bilan = {
+    scenes: st.record.scenes.map((r) => ({ chemin: 1, res: r.res })),
+    rival: st.record.rival,
+    finale: st.record.finale || "coeur",
+    exploits: extras.exploits,
+    inventions: extras.inventions,
+    objets: extras.objets,
+    notes: extras.notes,
+  };
+  a.scenes.forEach((sc) => { saga.used.textes.push(sc.defis[0].texte); saga.used.lieux.push(sc.lieu.nom); });
+  saga.used.mechants.push(st.mechant.nom);
+  saga.used.problemes.push(st.titre);
+  const ep = { numero: st.ctx.numero, themeId: st.themeId, adventure: a, bilan: null, live: true };
+  saga.episodes.push(ep);
+  applyBilan(saga, ep, bilan);
+  updateSaga(saga);
+  clearLive();
+  sagaView = "episode";
+  renderSaga();
+  window.scrollTo({ top: sagaRoot().offsetTop - 80, behavior: "smooth" });
 }
 
 /* ==========================================================
@@ -469,7 +569,7 @@ function renderBilan(saga, ep) {
     <div class="bilan-row"><strong>${s.numero}. ${escapeHtml(s.lieu.nom)}</strong> <small>(${escapeHtml(cap(s.defis[0].pnj || "rencontre"))})</small>
       ${radio(`s${i}-res`, [["ok", "✅ Aidé"], ["oops", "🌀 Aidé, mais…"], ["non", "🚶 Pas aidé"]], "ok")}</div>` : `
     <div class="bilan-row"><strong>${s.numero}. ${escapeHtml(s.lieu.nom)}</strong>
-      ${radio(`s${i}-chemin`, [["1", "⬅️ Chemin 1"], ["2", "➡️ Chemin 2"]], "1")}
+      ${s.defis.length > 1 ? radio(`s${i}-chemin`, [["1", "⬅️ Chemin 1"], ["2", "➡️ Chemin 2"]], "1") : ""}
       ${radio(`s${i}-res`, [["ok", "✅ Réussi"], ["oops", "🌀 Oui, mais…"]], "ok")}</div>`).join("");
 
   return `
@@ -499,10 +599,12 @@ function renderBilan(saga, ep) {
 }
 
 function renderEpisodePanel(saga) {
+  const live = loadLive();
+  if (live && live.mode === "saga" && live.ctx.sagaId === saga.id) return renderLiveHTML(live);
   const ep = saga.episodes[saga.episodes.length - 1];
   if (!ep) {
     return `<div class="saga-next"><p>Tout est prêt ! Préparez le premier épisode, lisez-le une fois, puis jouez.</p>
-      <button class="btn btn-big" data-action="next">✨ Préparer l'épisode 1</button></div>`;
+      ${nextButtons(1, saga)}</div>`;
   }
   if (!ep.bilan) {
     return `<div class="print-actions no-print"><button class="btn btn-ghost" onclick="window.print()">🖨️ Imprimer l'épisode</button></div>
@@ -519,8 +621,18 @@ function renderEpisodePanel(saga) {
   return `<div class="saga-next">
     <p>L'épisode ${n - 1} est terminé et noté dans le Livre. 🎉</p>
     <p class="hint">Le prochain épisode tiendra compte de tout ce qui s'est passé : vos amis, vos rivaux, votre sac et les idées des enfants.</p>
-    <button class="btn btn-big" data-action="next">✨ Préparer l'épisode ${n}${n === saga.nbEpisodes ? " (la grande fin !)" : ""}</button>
+    ${nextButtons(n, saga)}
     <p><button class="btn btn-small btn-ghost" data-action="redo-bilan">✏️ Corriger le bilan de l'épisode ${n - 1}</button></p></div>`;
+}
+
+function nextButtons(n, saga) {
+  return `<div class="form-actions">
+      <button class="btn btn-big btn-live" data-action="live">▶️ Jouer l'épisode ${n} en direct</button>
+      <button class="btn btn-big btn-ghost" data-action="next">📄 Préparer l'épisode ${n} à lire</button>
+    </div>
+    <p class="hint"><strong>En direct</strong> : l'histoire se construit pendant la partie selon les choix et les dés, et le bilan se remplit tout seul.
+      <strong>À lire</strong> : tout l'épisode est préparé à l'avance${n === saga.nbEpisodes ? "" : ""}, avec un bilan à remplir après.</p>
+    ${n === saga.nbEpisodes ? "<p><strong>🏆 C'est la grande fin !</strong></p>" : ""}`;
 }
 
 function renderSagaView(saga, store) {
@@ -649,6 +761,10 @@ function initSaga() {
       saveSagaStore(store);
     } else if (action === "view") {
       sagaView = btn.dataset.view;
+    } else if (action === "live" && saga) {
+      const ctx = sagaLiveContext(saga);
+      saveLive(startLive(ctx.themeId, saga.lengthId, randomSeed(), ctx));
+      sagaView = "episode";
     } else if (action === "next" && saga) {
       updateSaga(prepareEpisode(saga));
       sagaView = "episode";

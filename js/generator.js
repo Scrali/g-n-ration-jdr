@@ -115,7 +115,7 @@ function generateAdventure(themeId, lengthId, seed, themeOverride) {
 
 // « Le Géant Bobo » en milieu de phrase → « le Géant Bobo »
 function nomMilieu(nom) {
-  return nom.replace(/^(Le|La|Les) /, (m) => m.toLowerCase());
+  return nom.replace(/^(Le |La |Les |L')/, (m) => m.toLowerCase());
 }
 
 // « de » + nom : « du jeune page », « des Trois Compsognathes », « de Méduséa »

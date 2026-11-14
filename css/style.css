@@ -557,3 +557,30 @@ input[type="text"]:focus { outline: none; border-color: var(--primary); }
 .livre-monde { color: var(--muted); margin-top: 0; }
 .livre-fin { text-align: center; font-family: "Fredoka", sans-serif; font-size: 1.4rem; margin-top: 24px; }
 @media print { .saga-header { background: none; border: 1px solid #ccc; } .livre { box-shadow: none; } }
+
+/* ---------- Jouer en direct ---------- */
+.btn-live { background: var(--green); box-shadow: 0 4px 0 #2b8a60; }
+.btn-live:active { box-shadow: 0 1px 0 #2b8a60; }
+.live-tools { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px; }
+.live-tools .btn[disabled] { opacity: 0.4; cursor: default; }
+details.gm-box summary { cursor: pointer; font-family: "Fredoka", sans-serif; font-size: 1.1rem; color: var(--yellow); }
+.live-log { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.live-entry { background: var(--paper); border-radius: 14px; padding: 12px 16px; border-left: 5px solid var(--accent); }
+.live-entry h4 { margin: 0 0 4px; font-family: "Fredoka", sans-serif; font-size: 1.05rem; }
+.live-entry p { margin: 0.3em 0; }
+.live-entry.event { border-left-color: var(--purple); background: #faf7ff; }
+.live-entry.recap { border-left-color: var(--yellow); background: #fffbe8; }
+.live-current { background: var(--paper); border: 3px solid var(--green); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); scroll-margin-top: 80px; }
+.live-current.finale { border-color: var(--primary); }
+.live-current.ending { border-color: var(--yellow); }
+.live-current h3 { font-size: 1.35rem; }
+.live-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.live-option { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 16px; border: 3px solid var(--line); border-radius: 16px; background: #fff; cursor: pointer; font: inherit; color: var(--ink); }
+.live-option:hover { border-color: var(--green); transform: translateY(-2px); }
+.live-option strong { font-family: "Fredoka", sans-serif; font-size: 1.15rem; }
+.live-option span { color: var(--muted); font-size: 0.95rem; }
+.live-controls { margin-top: 12px; }
+.live-results { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.live-talents small { color: var(--muted); margin-left: 4px; }
+.live-save textarea, .live-save input { width: 100%; font: inherit; padding: 8px 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--bg); }
+@media print { .live-current { display: none; } .live-entry { border: 1px solid #ccc; } }
