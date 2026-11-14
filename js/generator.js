@@ -47,10 +47,6 @@ const DIFFICULTES = {
   5: { nom: "Difficile", texte: "5 ou plus" },
 };
 
-function capitalize(s) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 function generateAdventure(themeId, lengthId, seed) {
   const theme = THEMES.find((t) => t.id === themeId) || THEMES[0];
   const length = LENGTHS.find((l) => l.id === lengthId) || LENGTHS[0];
@@ -69,7 +65,8 @@ function generateAdventure(themeId, lengthId, seed) {
   // Défis : une rencontre au milieu, des obstacles ailleurs
   const nbRencontres = length.scenes >= 4 ? 2 : 1;
   const rencontres = pickMany(rng, theme.rencontres, nbRencontres);
-  const obstacles = pickMany(rng, theme.obstacles, length.scenes - nbRencontres);
+  // Chaque scène d'obstacle propose 2 chemins : les enfants choisissent
+  const obstacles = pickMany(rng, theme.obstacles, (length.scenes - nbRencontres) * 2);
   const positionsRencontre =
     nbRencontres === 2 ? [1, 3] : [Math.floor(length.scenes / 2)];
 
@@ -77,7 +74,7 @@ function generateAdventure(themeId, lengthId, seed) {
 
   const scenes = lieux.map((lieu, i) => {
     const estRencontre = positionsRencontre.includes(i);
-    const defi = estRencontre ? rencontres.shift() : obstacles.shift();
+    const defis = estRencontre ? [rencontres.shift()] : [obstacles.shift(), obstacles.shift()];
     // La première scène est facile pour bien démarrer
     let difficulte = 4;
     if (i === 0) difficulte = 3;
@@ -86,7 +83,7 @@ function generateAdventure(themeId, lengthId, seed) {
       numero: i + 1,
       type: estRencontre ? "rencontre" : "obstacle",
       lieu,
-      defi,
+      defis,
       difficulte,
       question: questions[i],
     };
@@ -100,7 +97,7 @@ function generateAdventure(themeId, lengthId, seed) {
     titre: probleme.titre,
     intro: {
       ambiance: theme.ambiance,
-      texte: `Voici qu'arrive ${donneur}, l'air très inquiet. Il y a un gros problème : ${probleme.texte}`,
+      texte: `Voici qu'arrive ${donneur}, qui a besoin de vous. Il y a un gros problème : ${probleme.texte}`,
       appel: "Il faut des héros pour sauver la situation. Est-ce que vous acceptez la mission ?",
     },
     compagnon: theme.compagnon,

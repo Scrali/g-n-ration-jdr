@@ -18,7 +18,6 @@
       <a href="#regles" data-tab="regles">📜 Règles</a>
       <a href="#heros" data-tab="heros">🧒 Héros</a>
       <a href="#aventure" data-tab="aventure">🗺️ Aventure</a>
-      <a href="#des" data-tab="des">🎲 Dés</a>
     </nav>
   </header>
 
@@ -66,8 +65,8 @@
         <li><strong>Lisez les <a href="#regles">règles</a></strong> (5 minutes, elles tiennent sur une page).</li>
         <li><strong>Créez les <a href="#heros">héros</a></strong> avec les enfants et imprimez leurs fiches. Ils adorent dessiner leur héros dessus !</li>
         <li><strong>Générez une <a href="#aventure">aventure</a></strong> courte (20–30 min) pour commencer. Le Conteur la lit une fois avant de jouer.</li>
-        <li><strong>Préparez la table</strong> : un dé à 6 faces (ou l'<a href="#des">onglet Dés</a>), des jetons pour les cœurs et les étoiles (bonbons, boutons, Lego…).</li>
-        <li><strong>Jouez !</strong> Et terminez toujours par le « moment de fierté » : chacun dit ce qu'il a préféré.</li>
+        <li><strong>Préparez la table</strong> : un dé à 6 faces, des jetons pour les cœurs et les étoiles (bonbons, boutons, Lego…).</li>
+        <li><strong>Jouez !</strong> Si les enfants partent dans une direction imprévue, ouvrez la <strong>🎴 boîte à imprévus</strong> (bouton en bas à droite) : oracle oui/non, événements, personnages, choix… Et terminez toujours par le « moment de fierté » : chacun dit ce qu'il a préféré.</li>
       </ol>
     </section>
 
@@ -138,7 +137,7 @@
         <div class="card">
           <h3>Pour le 5 ans</h3>
           <ul>
-            <li>Il suffit de reconnaître si le dé montre <strong>plus de 3 points</strong>. Le site affiche aussi ✅ ou 🌀.</li>
+            <li>Il suffit de reconnaître si le dé montre <strong>plus de 3 points</strong>. Astuce : collez une gommette sur les faces 4, 5 et 6.</li>
             <li>Laissez-le décrire son action avec des gestes, des bruits, un dessin.</li>
             <li>Proposez-lui 2 choix quand il bloque : « Tu grimpes à l'arbre ou tu appelles l'oiseau ? »</li>
             <li>Donnez-lui une étoile dès qu'il participe : c'est sa récompense.</li>
@@ -227,7 +226,7 @@
     <!-- ============ AVENTURE ============ -->
     <section id="aventure" class="panel">
       <h1 class="no-print">🗺️ Générateur d'aventures</h1>
-      <p class="lead no-print">Choisissez un monde et une durée, puis lancez la génération. Chaque aventure a un numéro : notez-le pour la retrouver.</p>
+      <p class="lead no-print">Choisissez un monde et une durée, puis générez. À chaque étape, les enfants choisissent entre deux chemins. Pendant la partie, la <strong>🎴 boîte à imprévus</strong> (en bas à droite) vous aide à improviser.</p>
 
       <div class="generator no-print">
         <div class="form-step">
@@ -248,38 +247,48 @@
       <div id="adventure-output"></div>
     </section>
 
-    <!-- ============ DES ============ -->
-    <section id="des" class="panel">
-      <h1>🎲 Lancer de dés</h1>
-      <div class="dice-controls">
-        <div class="form-step">
-          <span class="label">Combien de dés ?</span>
-          <div class="choice-grid choice-grid-3" id="dice-count">
-            <button type="button" class="choice selected" data-value="1"><span class="choice-emoji">🎲</span>1 dé<small>normal</small></button>
-            <button type="button" class="choice" data-value="2"><span class="choice-emoji">🎲🎲</span>2 dés<small>super-talent ou aide</small></button>
-            <button type="button" class="choice" data-value="3"><span class="choice-emoji">🎲🎲🎲</span>3 dés<small>super-talent + aide</small></button>
-          </div>
-        </div>
-        <div class="form-step">
-          <span class="label">C'est difficile comment ?</span>
-          <div class="choice-grid choice-grid-3" id="dice-diff">
-            <button type="button" class="choice" data-value="3"><span class="choice-emoji">🙂</span>Facile<small>3 ou plus</small></button>
-            <button type="button" class="choice selected" data-value="4"><span class="choice-emoji">😮</span>Normal<small>4 ou plus</small></button>
-            <button type="button" class="choice" data-value="5"><span class="choice-emoji">😱</span>Difficile<small>5 ou plus</small></button>
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-huge" id="roll">🎲 LANCER !</button>
-      <div id="dice-area" class="dice-area" aria-live="polite"></div>
-      <div id="dice-result" class="dice-result" aria-live="polite"></div>
-    </section>
   </main>
+
+
+  <button id="aleas-open" class="fab no-print" aria-controls="aleas">🎴 Imprévus</button>
+  <aside id="aleas" class="drawer no-print" aria-label="Boîte à imprévus" hidden>
+    <div class="drawer-head">
+      <h2>🎴 Boîte à imprévus</h2>
+      <button id="aleas-close" class="btn btn-ghost btn-small">✕ Fermer</button>
+    </div>
+    <p class="hint">Pour improviser pendant la partie : les enfants font quelque chose d'imprévu ? Tirez une carte !</p>
+    <div class="mini-label">Monde</div>
+    <div id="aleas-theme" class="mini-choices"></div>
+    <div id="aleas-buttons" class="aleas-buttons"></div>
+    <div id="aleas-results" class="aleas-results" aria-live="polite"></div>
+    <div class="oracle-box">
+      <div class="mini-label">🔮 Pour l'oracle, la réponse « oui » est…</div>
+      <div id="oracle-mod" class="mini-choices">
+        <button type="button" class="choice" data-value="-1">Peu probable</button>
+        <button type="button" class="choice selected" data-value="0">Incertaine</button>
+        <button type="button" class="choice" data-value="1">Probable</button>
+      </div>
+      <details>
+        <summary>Avec votre propre dé</summary>
+        <p>Posez une question (« Est-ce que la porte est fermée ? »), lancez le dé : <strong>+1</strong> si c'est probable, <strong>−1</strong> si c'est peu probable.</p>
+        <ol class="oracle-table">
+          <li><strong>Non, et en plus…</strong></li>
+          <li><strong>Non.</strong></li>
+          <li><strong>Non, mais…</strong></li>
+          <li><strong>Oui, mais…</strong></li>
+          <li><strong>Oui.</strong></li>
+          <li><strong>Oui, et en plus…</strong></li>
+        </ol>
+      </details>
+    </div>
+  </aside>
 
   <footer class="site-footer no-print">
     Fait avec ❤️ pour jouer en famille. Aucune donnée n'est envoyée : tout reste dans votre navigateur.
   </footer>
 
   <script src="js/data.js"></script>
+  <script src="js/aleas.js"></script>
   <script src="js/generator.js"></script>
   <script src="js/app.js"></script>
 </body>

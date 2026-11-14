@@ -42,7 +42,7 @@ function setSelected(container, value) {
 }
 
 /* ---------------- Onglets ---------------- */
-const TAB_IDS = ["accueil", "regles", "heros", "aventure", "des"];
+const TAB_IDS = ["accueil", "regles", "heros", "aventure"];
 
 function showTab(id) {
   if (!TAB_IDS.includes(id)) id = "accueil";
@@ -169,6 +169,12 @@ function initHeroes() {
 }
 
 /* ---------------- Aventure ---------------- */
+const SEUILS = {
+  3: { ok: "3, 4, 5, 6", rate: "1, 2" },
+  4: { ok: "4, 5, 6", rate: "1, 2, 3" },
+  5: { ok: "5, 6", rate: "1, 2, 3, 4" },
+};
+
 function talentBadge(id) {
   const t = TALENTS[id];
   return `<span class="badge badge-${id}">${t.emoji} ${t.nom}</span>`;
@@ -183,23 +189,43 @@ function renderAdventure(a) {
   const m = a.finale.mechant;
   const heroes = loadHeroes();
 
-  const scenes = a.scenes.map((s) => `
+  const challenge = (defi, difficulte, titre) => `
+    <div class="challenge">
+      <div class="challenge-head">
+        <strong>${titre}</strong> ${talentBadge(defi.talent)} ${diffBadge(difficulte)}
+      </div>
+      <div class="read-aloud compact">${escapeHtml(defi.texte)}</div>
+      <div class="outcomes">
+        <div class="outcome ok"><strong>✅ ${SEUILS[difficulte].ok} : ça marche</strong><p>${escapeHtml(defi.reussite)}</p></div>
+        <div class="outcome oops"><strong>🌀 ${SEUILS[difficulte].rate} : oui, mais…</strong><p>${escapeHtml(defi.rate)}</p></div>
+      </div>
+    </div>`;
+
+  const scenes = a.scenes.map((s) => {
+    if (s.type === "rencontre") {
+      return `
     <section class="scene">
       <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>
-      <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)} ${escapeHtml(s.defi.texte)}</div>
+      <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}</div>
       <p class="question">💬 <em>Demandez aux enfants : « ${escapeHtml(s.question)} »</em></p>
-      <div class="challenge">
-        <div class="challenge-head">
-          <strong>${s.type === "rencontre" ? "🤝 Rencontre" : "⚡ Défi"}</strong>
-          ${talentBadge(s.defi.talent)} ${diffBadge(s.difficulte)}
-        </div>
-        <p class="hint">Talent conseillé, mais si un enfant a une autre bonne idée, on utilise son talent à lui !</p>
-        <div class="outcomes">
-          <div class="outcome ok"><strong>✅ Ça marche</strong><p>${escapeHtml(s.defi.reussite)}</p></div>
-          <div class="outcome oops"><strong>🌀 Oui, mais…</strong><p>${escapeHtml(s.defi.rate)}</p></div>
-        </div>
+      ${challenge(s.defis[0], s.difficulte, "🤝 Rencontre")}
+      <p class="hint">Les enfants peuvent aussi choisir de ne pas aider… Dans ce cas, pas d'indice : ils devront le trouver plus tard (tirez un 💡 Coup de pouce).</p>
+    </section>`;
+    }
+    const [g, d] = s.defis;
+    return `
+    <section class="scene">
+      <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>
+      <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}
+        Pour continuer, il y a deux chemins possibles…</div>
+      <p class="question">🔀 <em>Décrivez les deux chemins, puis demandez : « Quel chemin choisissez-vous ? » (On peut voter !)</em></p>
+      <div class="paths">
+        ${challenge(g, s.difficulte, "⬅️ Chemin 1")}
+        ${challenge(d, s.difficulte, "➡️ Chemin 2")}
       </div>
-    </section>`).join("");
+      <p class="hint">Le talent indiqué est un conseil : si un enfant a une autre bonne idée, il lance avec son talent à lui.</p>
+    </section>`;
+  }).join("");
 
   const rebond = a.rebondissement ? `
     <section class="scene twist">
@@ -234,7 +260,7 @@ function renderAdventure(a) {
           Mais en vrai, <strong>${escapeHtml(m.raison)}</strong>. Les héros pourront le découvrir pendant l'aventure.</p>
         <p>🦉 <strong>Compagnon suggéré pour Maman :</strong> ${escapeHtml(a.compagnon)}.</p>
         ${heroList}
-        <p>🎒 Préparez : un dé (ou l'onglet Dés), 3 jetons-cœurs et des jetons-étoiles par enfant, la carte « Pause ».</p>
+        <p>🎒 Préparez : un dé, 3 jetons-cœurs et des jetons-étoiles par enfant, la carte « Pause ».</p>
       </section>
 
       <section class="scene intro">
@@ -257,7 +283,7 @@ function renderAdventure(a) {
           <div class="challenge-head"><strong>🏆 Le défi final</strong> ${diffBadge(a.finale.difficulte)}</div>
           <p>Le secret : <strong>${escapeHtml(m.raison)}</strong>. Les enfants peuvent s'en sortir de plusieurs façons :</p>
           <ul class="solutions">${solutions}</ul>
-          <p class="hint">Toute bonne idée des enfants marche ! Si leur solution utilise le Cœur (comprendre, consoler, se faire un ami), rendez-la <strong>facile (3 ou plus)</strong>. Chaque héros peut aider : c'est le bon moment pour utiliser les pouvoirs magiques. Si le dé rate, ce n'est pas perdu : le méchant hésite, et on peut réessayer autrement.</p>
+          <p class="hint">Toute bonne idée des enfants marche ! Si leur solution utilise le Cœur (comprendre, consoler, se faire un ami), rendez-la <strong>facile (3 ou plus)</strong>. Chaque héros peut aider : c'est le bon moment pour utiliser les pouvoirs magiques. Si le dé rate, ce n'est pas perdu : le méchant hésite, et on peut réessayer autrement (tirez un 🌀 « Oui, mais… » dans la boîte à imprévus).</p>
         </div>
       </section>
 
@@ -276,6 +302,7 @@ let currentAdventure = null;
 
 function showAdventure(a) {
   currentAdventure = a;
+  setAleasTheme(a.theme.id);
   $("#adventure-output").innerHTML = renderAdventure(a);
   $("#print-adventure").hidden = false;
   $("#copy-link").hidden = false;
@@ -311,56 +338,63 @@ function initAdventure() {
   });
 }
 
-/* ---------------- Dés ---------------- */
-function dieFace(value) {
-  return `<div class="die" data-value="${value}">${"<span class=\"pip\"></span>".repeat(value)}</div>`;
+/* ---------------- Boîte à imprévus ---------------- */
+let aleasThemeId = THEMES[0].id;
+
+function setAleasTheme(id) {
+  aleasThemeId = id;
+  setSelected($("#aleas-theme"), id);
 }
 
-function initDice() {
-  bindChoiceGroup($("#dice-count"));
-  bindChoiceGroup($("#dice-diff"));
-  let rolling = false;
+function renderAlea(btn, r) {
+  const body = r.lignes
+    ? `${r.titre ? `<strong>${escapeHtml(r.titre)}</strong>` : ""}<ul>${r.lignes.map(([k, v]) =>
+        `<li><span class="k">${escapeHtml(k)} :</span> ${escapeHtml(v)}</li>`).join("")}</ul>`
+    : `${r.titre ? `<strong>${escapeHtml(r.titre)}</strong> ` : ""}${escapeHtml(r.texte)}`;
+  return `<div class="alea-card ${r.cls ? `alea-${r.cls}` : ""}">
+    <div class="alea-type">${btn.emoji} ${escapeHtml(btn.nom)}</div>${body}</div>`;
+}
 
-  $("#roll").addEventListener("click", () => {
-    if (rolling) return;
-    rolling = true;
-    const count = parseInt(selectedValue($("#dice-count")), 10);
-    const target = parseInt(selectedValue($("#dice-diff")), 10);
-    const area = $("#dice-area");
-    const result = $("#dice-result");
-    result.className = "dice-result";
-    result.innerHTML = "";
+function openAleas(open) {
+  $("#aleas").hidden = !open;
+  $("#aleas-open").hidden = open;
+  document.body.classList.toggle("drawer-open", open);
+}
 
-    const roll = () => Array.from({ length: count }, () => 1 + Math.floor(Math.random() * 6));
-    let ticks = 0;
-    const timer = setInterval(() => {
-      area.innerHTML = roll().map(dieFace).join("");
-      area.classList.add("shaking");
-      if (++ticks >= 10) {
-        clearInterval(timer);
-        area.classList.remove("shaking");
-        const values = roll();
-        const best = Math.max(...values);
-        let bestMarked = false;
-        area.innerHTML = values.map((v) => {
-          const isBest = v === best && !bestMarked && count > 1;
-          if (isBest) bestMarked = true;
-          return dieFace(v).replace('class="die"', `class="die${isBest ? " best" : ""}"`);
-        }).join("");
-        const ok = best >= target;
-        result.classList.add(ok ? "ok" : "oops");
-        result.innerHTML = ok
-          ? `<span class="big">✅</span> Ça marche !${count > 1 ? `<small>On garde le meilleur : ${best}</small>` : ""}`
-          : `<span class="big">🌀</span> Oups… il se passe quelque chose d'inattendu !<small>Une étoile ✨ permet de relancer.</small>`;
-        rolling = false;
-      }
-    }, 70);
+function initAleas() {
+  const el = $("#aleas-theme");
+  el.innerHTML = THEMES.map((t) =>
+    `<button type="button" class="choice" data-value="${t.id}" title="${escapeHtml(t.nom)}">${t.emoji}</button>`).join("");
+  bindChoiceGroup(el, (id) => { aleasThemeId = id; });
+  setAleasTheme(aleasThemeId);
+  bindChoiceGroup($("#oracle-mod"));
+
+  $("#aleas-buttons").innerHTML = ALEAS_BOUTONS.map((b) => `
+    <button type="button" class="alea-btn" data-alea="${b.id}">
+      <span class="choice-emoji">${b.emoji}</span><strong>${escapeHtml(b.nom)}</strong><small>${escapeHtml(b.aide)}</small>
+    </button>`).join("");
+
+  $("#aleas-buttons").addEventListener("click", (e) => {
+    const target = e.target.closest(".alea-btn");
+    if (!target) return;
+    const btn = ALEAS_BOUTONS.find((b) => b.id === target.dataset.alea);
+    const theme = THEMES.find((t) => t.id === aleasThemeId);
+    const mod = parseInt(selectedValue($("#oracle-mod")), 10) || 0;
+    const r = ALEAS[btn.id](theme, mod);
+    const results = $("#aleas-results");
+    results.insertAdjacentHTML("afterbegin", renderAlea(btn, r));
+    while (results.children.length > 12) results.lastElementChild.remove();
+    results.firstElementChild.scrollIntoView({ behavior: "smooth", block: "nearest" });
   });
+
+  $("#aleas-open").addEventListener("click", () => openAleas(true));
+  $("#aleas-close").addEventListener("click", () => openAleas(false));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") openAleas(false); });
 }
 
 /* ---------------- Démarrage ---------------- */
 initHeroes();
 initAdventure();
-initDice();
+initAleas();
 window.addEventListener("hashchange", handleHash);
 handleHash();

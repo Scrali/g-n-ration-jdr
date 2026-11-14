@@ -61,6 +61,8 @@ const THEMES = [
     nom: "La Forêt Enchantée",
     emoji: "🌳",
     compagnon: "Pistache, un petit écureuil qui a toujours faim",
+    creatures: ["un hérisson","une chouette","un blaireau","une grenouille","un lutin","un escargot","une fourmi","un renard"],
+    imprevus: ["Une pluie de glands tombe des arbres : aïe, aïe, aïe !", "Un champignon géant se met à éternuer et projette des spores qui font rire tout le monde.", "Les arbres se mettent à marcher pour changer de place. Le chemin n'est plus au même endroit !", "Une abeille demande de l'aide : sa reine a perdu sa couronne dans une fleur."],
     ambiance: "Les arbres sont si hauts qu'on ne voit pas leur sommet. Des champignons brillent doucement, les fleurs chuchotent entre elles et ça sent la mousse et le miel.",
     donneurs: [
       "Mamie Chouette, la plus vieille chouette de la forêt",
@@ -117,6 +119,8 @@ const THEMES = [
     nom: "Le Château des Nuages",
     emoji: "🏰",
     compagnon: "Biscuit, un petit dragon qui éternue des étincelles",
+    creatures: ["un page","une cuisinière","un fantôme","une armure","un garde","un chat du château","une dame de compagnie","un bouffon"],
+    imprevus: ["Les trompettes sonnent : le roi arrive ! Il faut vite se cacher ou faire la révérence.", "Toutes les bougies du couloir s'éteignent en même temps.", "Un tableau change d'expression quand les héros passent devant.", "La cuisinière court après une poule qui s'est échappée et fonce droit sur les héros."],
     ambiance: "Un château aux tours pointues flotte au-dessus des nuages. Des drapeaux claquent au vent, on entend des trompettes au loin, et les escaliers sont tellement nombreux qu'on pourrait s'y perdre.",
     donneurs: [
       "la Reine Mirabelle, qui porte une couronne un peu trop grande",
@@ -173,6 +177,8 @@ const THEMES = [
     nom: "L'Île aux Pirates",
     emoji: "🏴‍☠️",
     compagnon: "Coco, un perroquet bavard qui répète tout de travers",
+    creatures: ["un perroquet","un crabe","une tortue","un mousse","une mouette","un vieux pirate","un singe","une sirène"],
+    imprevus: ["Un bateau pirate apparaît à l'horizon, drapeau au vent !", "La marée monte très vite : il faut grimper plus haut.", "Une bouteille arrive sur la plage avec un message à l'intérieur.", "Un singe a volé la carte et se sauve en riant dans les palmiers."],
     ambiance: "Le soleil tape fort, le sable est chaud et les vagues font « shhh… shhh… ». Des palmiers se balancent, et au loin on aperçoit un bateau aux voiles rapiécées.",
     donneurs: [
       "Capitaine Barbe-Rose, une pirate à la barbe tressée de rubans",
@@ -229,6 +235,8 @@ const THEMES = [
     nom: "Le Voyage dans les Étoiles",
     emoji: "🚀",
     compagnon: "Bip-Bop, un petit robot qui clignote quand il est content",
+    creatures: ["un extraterrestre","un robot","une astronaute","un martien","une étoile vivante","un satellite qui parle","un vendeur de comètes"],
+    imprevus: ["Une alarme se met à sonner : « Alerte ! Alerte ! Biscuits presque finis ! »", "Une comète passe tout près et laisse une traînée d'étincelles.", "La gravité s'arrête pendant une minute : tout le monde flotte !", "Un message radio arrive en grésillant, dans une langue bizarre."],
     ambiance: "Par le hublot de la fusée, les étoiles brillent comme des paillettes. Des planètes de toutes les couleurs flottent dans le noir et, à l'intérieur, tout fait « bip » et « vrrrr ».",
     donneurs: [
       "la Commandante Zara, qui dirige la station spatiale",
@@ -285,6 +293,8 @@ const THEMES = [
     nom: "La Vallée des Dinosaures",
     emoji: "🦕",
     compagnon: "Pouic, un bébé tricératops qui fait des bruits de klaxon",
+    creatures: ["un bébé tricératops","un ptérodactyle","une libellule géante","un stégosaure","un raptor","une tortue préhistorique","un diplodocus"],
+    imprevus: ["Le sol tremble : boum… boum… BOUM ! Quelque chose de très gros approche.", "Un volcan au loin crache un nuage de fumée rose.", "Un œuf se met à bouger et à craquer tout près des héros.", "Un ptérodactyle attrape un objet d'un héros et s'envole avec."],
     ambiance: "Des fougères géantes, des volcans fumants au loin et le sol qui tremble à chaque pas de diplodocus. Ça sent la terre mouillée et on entend des « ROAAR » au loin.",
     donneurs: [
       "Grand-Mère Diplodocus, si grande qu'elle parle depuis le haut des arbres",
@@ -341,6 +351,8 @@ const THEMES = [
     nom: "Le Royaume sous la Mer",
     emoji: "🐠",
     compagnon: "Bulle, une petite méduse qui s'allume quand elle rigole",
+    creatures: ["un hippocampe","une étoile de mer","un poulpe","un poisson-clown","une tortue de mer","un crabe","une sirène","un dauphin"],
+    imprevus: ["Un banc de milliers de petits poissons entoure les héros : on n'y voit plus rien !", "Un courant chaud fait faire des bulles partout. Ça chatouille !", "Une ombre gigantesque passe au-dessus : c'est une baleine.", "Un coquillage se met à parler et à appeler au secours."],
     ambiance: "Tout est bleu et calme. Des poissons de toutes les couleurs passent en bancs, les algues dansent doucement et des bulles remontent vers la surface. Grâce à une bulle magique, les héros respirent sous l'eau.",
     donneurs: [
       "le Roi Corail, avec sa couronne de coquillages",
