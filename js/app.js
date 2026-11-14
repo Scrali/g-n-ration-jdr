@@ -202,6 +202,7 @@ function initHeroes() {
 
 /* ---------------- Aventure ---------------- */
 const SEUILS = {
+  2: { ok: "2, 3, 4, 5, 6", rate: "1" },
   3: { ok: "3, 4, 5, 6", rate: "1, 2" },
   4: { ok: "4, 5, 6", rate: "1, 2, 3" },
   5: { ok: "5, 6", rate: "1, 2, 3, 4" },
@@ -425,13 +426,28 @@ function setAleasTheme(id) {
   setSelected($("#aleas-theme"), id);
 }
 
+// Les cartes tirées peuvent être ajoutées à la partie en direct
+const aleasTires = [];
+
+function aleaTexte(r) {
+  if (r.lignes) return `${r.titre ? `${r.titre}. ` : ""}${r.lignes.map(([k, v]) => `${k} : ${v}`).join(". ")}.`;
+  return `${r.titre ? `${r.titre} ` : ""}${r.texte}`;
+}
+
 function renderAlea(btn, r) {
+  aleasTires.push({ btn, r });
+  const idx = aleasTires.length - 1;
+  const live = typeof loadLive === "function" && loadLive() && loadLive().current.kind !== "fin";
+  const actions = live ? `<div class="alea-actions">
+      <button class="btn btn-small btn-ghost" data-alea-add="${idx}">➕ Ajouter à l'histoire</button>
+      ${btn.id === "imprevu" ? `<button class="btn btn-small" data-alea-resolve="${idx}">🎲 À résoudre maintenant</button>` : ""}
+    </div>` : "";
   const body = r.lignes
     ? `${r.titre ? `<strong>${escapeHtml(r.titre)}</strong>` : ""}<ul>${r.lignes.map(([k, v]) =>
         `<li><span class="k">${escapeHtml(k)} :</span> ${escapeHtml(v)}</li>`).join("")}</ul>`
     : `${r.titre ? `<strong>${escapeHtml(r.titre)}</strong> ` : ""}${escapeHtml(r.texte)}`;
   return `<div class="alea-card ${r.cls ? `alea-${r.cls}` : ""}">
-    <div class="alea-type">${btn.emoji} ${escapeHtml(btn.nom)}</div>${body}</div>`;
+    <div class="alea-type">${btn.emoji} ${escapeHtml(btn.nom)}</div>${body}${actions}</div>`;
 }
 
 function openAleas(open) {
@@ -464,6 +480,25 @@ function initAleas() {
     results.insertAdjacentHTML("afterbegin", renderAlea(btn, r));
     while (results.children.length > 12) results.lastElementChild.remove();
     results.firstElementChild.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+
+  $("#aleas-results").addEventListener("click", (e) => {
+    const add = e.target.closest("[data-alea-add]");
+    const res = e.target.closest("[data-alea-resolve]");
+    const pickd = add || res;
+    if (!pickd) return;
+    const { btn, r } = aleasTires[parseInt(pickd.dataset.aleaAdd || pickd.dataset.aleaResolve, 10)];
+    if (res) {
+      liveAction((st) => insertImprevu(st, r.texte));
+      openAleas(false);
+    } else {
+      liveAction((st) => {
+        st.log.push({ titre: `${btn.emoji} ${btn.nom}`, lignes: [aleaTexte(r)], cls: "event" });
+        if (btn.id === "personnage" && r.titre) st.inventions.push(r.titre);
+      });
+      pickd.textContent = "✅ Ajouté !";
+      pickd.disabled = true;
+    }
   });
 
   $("#aleas-open").addEventListener("click", () => openAleas(true));

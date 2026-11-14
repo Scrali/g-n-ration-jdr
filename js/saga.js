@@ -343,6 +343,7 @@ function sagaLiveContext(saga) {
     heroes: saga.heroes,
     allies: saga.allies.map((x) => x.nom),
     sac: saga.sac.slice(),
+    reputation: saga.reputation || 0,
     inventions: saga.inventions.map((x) => x.texte),
     recap: n > 1 ? buildRecap(saga) : null,
     gmExtra: [`📚 Le secret de la saga : le Grand Méchant est ${def.grandMechant.nom}. En vrai, ${def.grandMechant.raison}.`],
@@ -409,6 +410,7 @@ function finishLiveSaga(st, extras) {
   a.scenes.forEach((sc) => { saga.used.textes.push(sc.defis[0].texte); saga.used.lieux.push(sc.lieu.nom); });
   saga.used.mechants.push(st.mechant.nom);
   saga.used.problemes.push(st.titre);
+  saga.reputation = st.reputation || 0;
   const ep = { numero: st.ctx.numero, themeId: st.themeId, adventure: a, bilan: null, live: true };
   saga.episodes.push(ep);
   applyBilan(saga, ep, bilan);

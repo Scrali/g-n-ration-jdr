@@ -97,8 +97,8 @@ function rollDice(roller) {
     const diff = roller.querySelector(".roller-diff .selected");
     target = diff ? parseInt(diff.dataset.value, 10) : 4;
   }
-  // Pendant la grande fin, la difficulté dépend du talent choisi par les enfants
-  if (roller.dataset.apply === "finale" && typeof loadLive === "function") {
+  // En direct, la difficulté dépend du talent choisi par les enfants (et de ce qui s'est passé avant)
+  if (roller.dataset.apply && typeof loadLive === "function") {
     const st = loadLive();
     const host = roller.closest(".live");
     const sel = host && host.querySelector(".live-talents .choice.selected");

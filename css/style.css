@@ -660,3 +660,28 @@ details.gm-box summary { cursor: pointer; font-family: "Fredoka", sans-serif; fo
 .btn-reveal { background: #2d2a32; box-shadow: 0 4px 0 #000; }
 @media (prefers-reduced-motion: reduce) { .die.rolling, .dice-area.holding .die, .die.landed { animation: none; } }
 @media (max-width: 560px) { .die { width: 70px; height: 70px; padding: 9px; } .pip { width: 12px; height: 12px; } .roller-big .die { width: 96px; height: 96px; } .roller-big .pip { width: 17px; height: 17px; } }
+
+/* ---------- Héros en direct, réputation, interactions ---------- */
+.hero-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.hero-token { flex: 1 1 150px; min-width: 0; background: var(--paper); border: 2px solid var(--line); border-radius: 14px; padding: 8px 10px; }
+.hero-token.active { border-color: var(--green); box-shadow: 0 0 0 3px #d6f3e5; }
+.ht-name { font-family: "Fredoka", sans-serif; font-weight: 600; }
+.ht-stats { display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.9rem; margin: 2px 0 4px; }
+.ht-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+.ht-btns button { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 2px 6px; font-size: 0.8rem; cursor: pointer; color: var(--ink); }
+.ht-btns button:hover { border-color: var(--primary); }
+.rep-token { flex-basis: 200px; background: #faf7ff; }
+.spotlight { display: flex; gap: 12px; align-items: center; background: linear-gradient(135deg, #fff3c4, #ffe3c2); border-radius: 14px; padding: 10px 14px; margin: 8px 0; }
+.spotlight strong { font-family: "Fredoka", sans-serif; font-size: 1.3rem; }
+.spot-emoji { font-size: 2.4rem; line-height: 1; }
+.interaction { background: #e9f6ff; border: 2px dashed var(--accent); border-radius: 12px; padding: 10px 14px; margin: 8px 0; font-size: 1.05rem; }
+.live-current.imprevu { border-color: var(--purple); }
+.btn-power { background: var(--purple); box-shadow: 0 4px 0 #7a5cc4; }
+.btn-power:active { box-shadow: 0 1px 0 #7a5cc4; }
+.rep-note { background: #f4ecff; }
+.live-tools { flex-wrap: wrap; align-items: center; }
+.idea-form { display: flex; gap: 6px; flex: 1 1 260px; min-width: 0; }
+.idea-form input { flex: 1; min-width: 0; font: inherit; padding: 4px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--paper); }
+.live-who small, .live-talents small { color: var(--muted); }
+.alea-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.alea-card:not(:first-child) .alea-actions { opacity: 1; }

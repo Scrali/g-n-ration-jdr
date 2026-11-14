@@ -42,6 +42,7 @@ const QUESTIONS_AUX_ENFANTS = [
 ];
 
 const DIFFICULTES = {
+  2: { nom: "Très facile", texte: "2 ou plus" },
   3: { nom: "Facile", texte: "3 ou plus" },
   4: { nom: "Normal", texte: "4 ou plus" },
   5: { nom: "Difficile", texte: "5 ou plus" },
