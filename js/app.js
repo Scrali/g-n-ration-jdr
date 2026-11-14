@@ -12,6 +12,36 @@ function escapeHtml(str) {
 
 function $(sel) { return document.querySelector(sel); }
 
+// Dans une page intégrée (ex. claude.ai), impression, téléchargement et confirm() sont bloqués
+const IS_FRAMED = (() => { try { return window.self !== window.top; } catch { return true; } })();
+if (IS_FRAMED) document.documentElement.classList.add("framed");
+
+// Fenêtre de dialogue intégrée à la page (remplace confirm/alert, qui ne marchent pas partout)
+function showModal(innerHtml) {
+  const box = document.createElement("div");
+  box.className = "modal-backdrop";
+  box.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${innerHtml}</div>`;
+  document.body.appendChild(box);
+  box.addEventListener("click", (e) => {
+    if (e.target === box || e.target.closest("[data-m=close]")) box.remove();
+  });
+  return box;
+}
+
+function askConfirm(message, onYes, yesLabel = "Oui") {
+  const box = showModal(`<p>${escapeHtml(message)}</p>
+    <div class="form-actions"><button class="btn btn-ghost" data-m="close">Annuler</button>
+    <button class="btn" data-m="yes">${escapeHtml(yesLabel)}</button></div>`);
+  const yes = box.querySelector("[data-m=yes]");
+  yes.focus();
+  yes.addEventListener("click", () => { box.remove(); onYes(); });
+}
+
+function notify(message) {
+  showModal(`<p>${escapeHtml(message)}</p><div class="form-actions"><button class="btn" data-m="close">OK</button></div>`)
+    .querySelector("[data-m=close]").focus();
+}
+
 /* ---------------- Choix (boutons sélectionnables) ---------------- */
 function renderChoices(container, items, { selected, sub } = {}) {
   container.innerHTML = items.map((it) => `
@@ -158,9 +188,11 @@ function initHeroes() {
     const id = e.target.dataset.delete;
     if (!id) return;
     const hero = loadHeroes().find((h) => h.id === id);
-    if (hero && confirm(`Supprimer ${hero.name} ?`)) {
-      saveHeroes(loadHeroes().filter((h) => h.id !== id));
-      renderHeroes();
+    if (hero) {
+      askConfirm(`Supprimer ${hero.name} ?`, () => {
+        saveHeroes(loadHeroes().filter((h) => h.id !== id));
+        renderHeroes();
+      }, "Supprimer");
     }
   });
 

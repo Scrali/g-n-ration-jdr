@@ -458,7 +458,7 @@ function renderLiveCurrent(st) {
         <div class="form-actions"><button type="submit" class="btn btn-big">📚 Enregistrer dans la saga</button></div>
       </form>` : `
       <div class="form-actions">
-        <button class="btn" onclick="window.print()">🖨️ Imprimer notre histoire</button>
+        <button class="btn print-btn" onclick="window.print()">🖨️ Imprimer notre histoire</button>
         <button class="btn btn-big" data-live="quit">🔁 Nouvelle partie</button>
       </div>`}
   </section>`;
@@ -527,14 +527,16 @@ function initLive() {
   const gen = document.getElementById("generate");
   gen.insertAdjacentHTML("afterend", '<button class="btn btn-big btn-live" id="play-live">▶️ Jouer en direct</button>');
   document.getElementById("play-live").addEventListener("click", () => {
-    const cur = loadLive();
-    if (cur && !confirm("Une partie est déjà en cours. La remplacer ?")) return;
-    const themeId = selectedValue($("#theme-choices"));
-    const lengthId = selectedValue($("#length-choices"));
-    history.replaceState(null, "", "#aventure");
-    saveLive(startLive(themeId, lengthId, randomSeed()));
-    refreshLive(false);
-    document.getElementById("adventure-output").scrollIntoView({ behavior: "smooth" });
+    const go = () => {
+      const themeId = selectedValue($("#theme-choices"));
+      const lengthId = selectedValue($("#length-choices"));
+      history.replaceState(null, "", "#aventure");
+      saveLive(startLive(themeId, lengthId, randomSeed()));
+      refreshLive(false);
+      document.getElementById("adventure-output").scrollIntoView({ behavior: "smooth" });
+    };
+    if (loadLive()) askConfirm("Une partie est déjà en cours. La remplacer par une nouvelle ?", go, "Nouvelle partie");
+    else go();
   });
 
   document.addEventListener("click", (e) => {
@@ -555,11 +557,13 @@ function initLive() {
       case "rival": liveAction((st) => resolveRival(st, btn.dataset.res)); break;
       case "finale": liveAction((st) => resolveFinale(st, talent, btn.dataset.res)); break;
       case "undo": liveUndo(); break;
-      case "quit":
-        if (loadLive() && loadLive().current.kind !== "fin" && !confirm("Arrêter la partie en cours ?")) return;
-        clearLive();
-        refreshLive(false);
+      case "quit": {
+        const stop = () => { clearLive(); refreshLive(false); };
+        const st = loadLive();
+        if (st && st.current.kind !== "fin") askConfirm("Arrêter la partie en cours ?", stop, "Arrêter");
+        else stop();
         break;
+      }
       default:
     }
   });

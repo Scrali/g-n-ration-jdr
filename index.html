@@ -75,7 +75,7 @@
     <!-- ============ REGLES ============ -->
     <section id="regles" class="panel">
       <div class="print-actions no-print">
-        <button class="btn" onclick="window.print()">🖨️ Imprimer les règles</button>
+        <button class="btn print-btn" onclick="window.print()">🖨️ Imprimer les règles</button>
       </div>
 
       <h1>📜 Les règles des Petits Héros</h1>
@@ -220,7 +220,7 @@
       <h2 class="no-print">Nos héros</h2>
       <p class="hint no-print">Les héros sont enregistrés dans ce navigateur. Imprimez les fiches pour les garder à côté de la table.</p>
       <div class="print-actions no-print">
-        <button class="btn" id="print-heroes">🖨️ Imprimer les fiches</button>
+        <button class="btn print-btn" id="print-heroes">🖨️ Imprimer les fiches</button>
       </div>
       <div id="hero-list" class="hero-list"></div>
     </section>
@@ -241,7 +241,7 @@
         </div>
         <div class="form-actions">
           <button class="btn btn-big" id="generate">✨ Générer une aventure</button>
-          <button class="btn btn-ghost" id="print-adventure" hidden>🖨️ Imprimer</button>
+          <button class="btn btn-ghost print-btn" id="print-adventure" hidden data-print>🖨️ Imprimer</button>
           <button class="btn btn-ghost" id="copy-link" hidden>🔗 Copier le lien</button>
         </div>
       </div>

@@ -500,7 +500,8 @@ function renderSagaCreate(store) {
         }).join("")}</div>` : `<p class="hint">Aucun héros pour l'instant. <a href="#heros">Créez d'abord les héros</a> pour pouvoir noter leurs exploits dans la saga.</p>`}
       </div>
       <div class="form-actions">
-        <label class="btn btn-ghost import-label">📂 Charger une saga (fichier)<input type="file" accept=".json,application/json" data-action="import" hidden></label>
+        <button type="button" class="btn btn-ghost" data-action="paste-import">📋 Coller une sauvegarde</button>
+        <label class="btn btn-ghost import-label">📂 Charger un fichier<input type="file" accept=".json,application/json" data-action="import" hidden></label>
         <button type="submit" class="btn btn-big">🚀 Commencer la saga</button>
       </div>
     </form>`;
@@ -546,7 +547,7 @@ function renderLivre(saga) {
   const done = saga.episodes.filter((e) => e.bilan);
   if (!done.length) return `<p class="empty">Le livre se remplira après le premier épisode, quand vous aurez fait le bilan.</p>`;
   return `
-    <div class="print-actions no-print"><button class="btn" onclick="window.print()">🖨️ Imprimer le livre</button></div>
+    <div class="print-actions no-print"><button class="btn print-btn" onclick="window.print()">🖨️ Imprimer le livre</button></div>
     <article class="livre">
       <h2>📖 ${escapeHtml(saga.titre)}</h2>
       <p class="livre-heroes">Avec ${escapeHtml(joinNames(saga.heroes.map((h) => h.name)) || "nos héros")}</p>
@@ -607,7 +608,7 @@ function renderEpisodePanel(saga) {
       ${nextButtons(1, saga)}</div>`;
   }
   if (!ep.bilan) {
-    return `<div class="print-actions no-print"><button class="btn btn-ghost" onclick="window.print()">🖨️ Imprimer l'épisode</button></div>
+    return `<div class="print-actions no-print"><button class="btn btn-ghost print-btn" onclick="window.print()">🖨️ Imprimer l'épisode</button></div>
       ${renderAdventure(hydrateAdventure(ep.adventure))}
       ${renderBilan(saga, ep)}`;
   }
@@ -726,11 +727,62 @@ function downloadSaga(saga) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `saga-${saga.titre.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}.json`;
+  link.download = `saga-${saga.titre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-")}.json`;
   document.body.appendChild(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function importSagaText(text) {
+  try {
+    const saga = JSON.parse(text);
+    if (!saga || !Array.isArray(saga.episodes) || !saga.sagaId) throw new Error("format");
+    const store = loadSagaStore();
+    if (store.sagas.some((s) => s.id === saga.id)) saga.id = `saga-${Date.now().toString(36)}`;
+    store.sagas.push(saga);
+    store.currentId = saga.id;
+    saveSagaStore(store);
+    sagaView = "episode";
+    renderSaga();
+    return true;
+  } catch {
+    notify("Ce texte ne ressemble pas à une sauvegarde de saga des Petits Héros. Vérifiez qu'il a été copié en entier.");
+    return false;
+  }
+}
+
+// Sauvegarde : fichier quand c'est possible, sinon texte à copier
+function exportSaga(saga) {
+  const text = JSON.stringify(saga);
+  const box = showModal(`<h3>💾 Sauvegarder la saga</h3>
+    <p>Copiez ce texte et gardez-le (dans une note, un e-mail à vous-même…). Pour retrouver la saga sur un autre appareil : onglet Saga → « Nouvelle saga » → « Coller une sauvegarde ».</p>
+    <textarea id="export-text" rows="6" readonly></textarea>
+    <div class="form-actions">
+      ${IS_FRAMED ? "" : '<button class="btn btn-ghost" data-m="file">📁 Télécharger un fichier</button>'}
+      <button class="btn btn-ghost" data-m="close">Fermer</button>
+      <button class="btn" data-m="copy">📋 Copier</button>
+    </div>`);
+  const ta = box.querySelector("#export-text");
+  ta.value = text;
+  box.querySelector("[data-m=copy]").addEventListener("click", async (e) => {
+    try { await navigator.clipboard.writeText(text); e.target.textContent = "✅ Copié !"; }
+    catch { ta.focus(); ta.select(); e.target.textContent = "Sélectionné : faites Copier"; }
+  });
+  const file = box.querySelector("[data-m=file]");
+  if (file) file.addEventListener("click", () => downloadSaga(saga));
+}
+
+function pasteImportModal() {
+  const box = showModal(`<h3>📋 Coller une sauvegarde</h3>
+    <p>Collez ici le texte copié avec « Sauvegarder ».</p>
+    <textarea id="import-text" rows="6"></textarea>
+    <div class="form-actions"><button class="btn btn-ghost" data-m="close">Annuler</button>
+    <button class="btn" data-m="load">Charger la saga</button></div>`);
+  box.querySelector("#import-text").focus();
+  box.querySelector("[data-m=load]").addEventListener("click", () => {
+    if (importSagaText(box.querySelector("#import-text").value.trim())) box.remove();
+  });
 }
 
 function initSaga() {
@@ -769,16 +821,26 @@ function initSaga() {
       updateSaga(prepareEpisode(saga));
       sagaView = "episode";
     } else if (action === "redo-bilan" && saga) {
-      if (!confirm("Corriger le bilan ? Il faudra le remplir à nouveau.")) return;
-      updateSaga(rebuildSagaState(saga, true));
+      askConfirm("Corriger le bilan ? Il faudra le remplir à nouveau.", () => {
+        updateSaga(rebuildSagaState(saga, true));
+        renderSaga();
+      }, "Corriger");
+      return;
     } else if (action === "export" && saga) {
-      downloadSaga(saga);
+      exportSaga(saga);
+      return;
+    } else if (action === "paste-import") {
+      pasteImportModal();
       return;
     } else if (action === "delete" && saga) {
-      if (!confirm(`Supprimer définitivement la saga « ${saga.titre} » ? (Pensez à la sauvegarder avant.)`)) return;
-      store.sagas = store.sagas.filter((s) => s.id !== saga.id);
-      store.currentId = null;
-      saveSagaStore(store);
+      askConfirm(`Supprimer définitivement la saga « ${saga.titre} » ? Pensez à la sauvegarder avant.`, () => {
+        const st = loadSagaStore();
+        st.sagas = st.sagas.filter((s) => s.id !== saga.id);
+        st.currentId = null;
+        saveSagaStore(st);
+        renderSaga();
+      }, "Supprimer");
+      return;
     } else if (action === "remove" && saga) {
       const kind = btn.dataset.kind;
       const item = saga[kind][parseInt(btn.dataset.index, 10)];
@@ -804,21 +866,7 @@ function initSaga() {
     }
     if (e.target.dataset.action === "import" && e.target.files[0]) {
       const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const saga = JSON.parse(reader.result);
-          if (!saga || !Array.isArray(saga.episodes) || !saga.sagaId) throw new Error("format");
-          const store = loadSagaStore();
-          if (store.sagas.some((s) => s.id === saga.id)) saga.id = `saga-${Date.now().toString(36)}`;
-          store.sagas.push(saga);
-          store.currentId = saga.id;
-          saveSagaStore(store);
-          sagaView = "episode";
-          renderSaga();
-        } catch {
-          alert("Ce fichier ne ressemble pas à une saga des Petits Héros.");
-        }
-      };
+      reader.onload = () => importSagaText(reader.result);
       reader.readAsText(e.target.files[0]);
     }
   });
