@@ -17,6 +17,8 @@ Un petit site pour jouer au jeu de rôle en famille avec des enfants de 5 à 8 a
 
 ## Utilisation
 
+Le site est en ligne : **https://scrali.github.io/g-n-ration-jdr/**
+
 Aucun outil à installer : ouvrez `index.html` dans un navigateur.
 
 Pour le mettre en ligne gratuitement : sur GitHub, *Settings → Pages → Deploy from a branch*, puis choisissez la branche et le dossier `/ (root)`.
