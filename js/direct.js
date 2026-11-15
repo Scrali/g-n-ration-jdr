@@ -736,6 +736,7 @@ function goFinale(st) {
 
 function revealSuspense(st) {
   const c = st.current;
+  if (c.suite && c.suite.kind === "scene") c.suite.dejaLu = c.lire.length;
   if (c.final) st.log.push({ titre: "⏳ Juste avant la fin…", lignes: c.lire, cls: "event" });
   st.current = c.suite;
 }
@@ -808,7 +809,15 @@ function liveUndo() {
   refreshLive(true);
 }
 
-/* ---------------- Affichage ---------------- */
+/* ==========================================================
+   ÉCRAN DE JEU DU CONTEUR
+   Pendant une partie, le site laisse la place à un écran
+   simple : une seule chose à la fois, en grand.
+     Lire → Défi → Résultat (à lire) → Où aller ? → …
+   Tout le reste (héros, réputation, secret, histoire,
+   réglages) est rangé dans le menu ☰.
+   ========================================================== */
+
 // Le Conteur choisit une fois pour toutes : le dé du site, ou son propre dé
 const DE_MODE_KEY = "petits-heros:demode";
 function deMode() {
@@ -818,285 +827,321 @@ function setDeMode(v) {
   try { localStorage.setItem(DE_MODE_KEY, v); } catch { /* rien */ }
 }
 
-function liveTalentPicker(selected, difficultes) {
-  return `<div class="mini-choices live-talents">${Object.entries(TALENTS).map(([id, t]) => `
-    <button type="button" class="choice${id === selected ? " selected" : ""}" data-value="${id}">${t.emoji} ${t.nom}${difficultes ? ` <small>${DIFFICULTES[difficultes[id]].texte}</small>` : ""}</button>`).join("")}</div>`;
+let menuOuvert = false;
+
+function toast(message) {
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.textContent = message;
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add("out"), 1800);
+  setTimeout(() => t.remove(), 2300);
 }
 
-function liveHeroPicker(st, selected) {
-  if (!st.heroes.length) return "";
-  return `<div class="play-row"><span class="play-label">Qui ?</span>
-    <div class="mini-choices live-who">${st.heroes.map((h, i) => `
-      <button type="button" class="choice${i === selected ? " selected" : ""}" data-value="${i}">${h.emoji} ${escapeHtml(h.name)}</button>`).join("")}</div></div>`;
+/* ---------------- Petits morceaux ---------------- */
+function aLire(lignes) {
+  return `<div class="a-lire">${lignes.map((t) => {
+    const sus = t.startsWith("⏳ ");
+    return `<p class="${sus ? "sus" : ""}">${escapeHtml(sus ? t.slice(2) : t)}</p>`;
+  }).join("")}</div>`;
 }
 
-function turnChip(st, idx) {
-  const h = heroAt(st, idx);
-  if (!h) return "";
-  return `<div class="turn-chip"><span class="turn-emoji">${h.emoji}</span> Au tour de <strong>${escapeHtml(h.name)}</strong></div>`;
+function aide(lignes) {
+  const l = lignes.filter(Boolean);
+  return l.length ? `<ul class="carte-aide">${l.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>` : "";
 }
 
-// Bloc ① : tout ce qui se lit à voix haute, en un seul endroit
-function readBlock(lignes, titre = "① Lisez aux enfants") {
-  return `<div class="block block-read">
-    <div class="block-label">${titre}</div>
-    ${lignes.map((t) => `<p class="${t.startsWith("⏳") ? "sus-line" : ""}">${escapeHtml(t.replace(/^⏳ /, ""))}</p>`).join("")}
-  </div>`;
+function carte({ etiquette, titre, corps, actions = "", cls = "" }) {
+  return `<section class="carte live-current ${cls}">
+    <div class="carte-etiquette">${escapeHtml(etiquette)}</div>
+    <h2 class="carte-titre">${titre}</h2>
+    ${corps}
+    ${actions ? `<div class="carte-actions">${actions}</div>` : ""}
+  </section>`;
 }
 
-// Bloc ③ : qui, avec quel talent, et le dé
-function playBlock(st, c, action, talentDefaut, boutons, extra = "") {
-  const h = heroAt(st, c.heroIdx);
-  const pouvoir = h && !h.pouvoir
-    ? `<button class="btn btn-small btn-power" data-live="${action}" data-res="pouvoir">✨ Pouvoir de ${escapeHtml(h.name)} : ${h.powerEmoji} ${escapeHtml(h.power)} (réussite sans dé)</button>`
-    : "";
-  const aSavoir = (c.raisons || []).concat(c.notes || []);
-  const de = deMode() === "site"
-    ? diceRollerHTML({ target: c.difficultes[talentDefaut], apply: action })
-    : `<div class="manual-results">${boutons.map(([v, l, ghost]) => `<button class="btn${ghost ? " btn-ghost" : ""}" data-live="${action}" data-res="${v}">${l}</button>`).join("")}</div>`;
-  return `<div class="block block-play">
-    <div class="block-label">${extra ? "③" : "②"} Le défi</div>
-    ${liveHeroPicker(st, c.heroIdx)}
-    <div class="play-row"><span class="play-label">Talent ?</span>${liveTalentPicker(talentDefaut, c.difficultes)}</div>
-    ${aSavoir.length ? `<ul class="a-savoir">${aSavoir.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>` : ""}
-    ${de}
-    ${pouvoir ? `<div class="power-row">${pouvoir}</div>` : ""}
-  </div>`;
-}
-
-function outcomesDetails(d, h, extraHint) {
-  return `<details class="block block-gm">
-    <summary>🎭 Pour vous : ce qui se passe selon le dé</summary>
-    <div class="outcomes">
-      <div class="outcome ok"><strong>✅ Ça marche</strong><p>${escapeHtml(nommer(d.reussite, h))}</p></div>
-      <div class="outcome oops"><strong>🌀 Oui, mais…</strong><p>${escapeHtml(nommer(d.rate, h))}</p></div>
-    </div>
-    <p class="hint">🌟 Un 6 ajoute un bonus et une étoile. 🙈 Un 1 ajoute une catastrophe rigolote et une étoile de courage. Le site écrit la suite tout seul.${extraHint || ""}</p>
-  </details>`;
-}
-
-function livePlaymo(st, lieu, mechant, idx) {
+function playmoAide(st, lieu, mechant, idx) {
   if (!playmoOn()) return "";
   const h = heroAt(st, idx);
-  return `<div class="block block-playmo"><div class="block-label">🧸 Installez la scène</div>
-    <p>${escapeHtml(playmoLieu(lieu))}${h && h.figurine ? ` Le tour de ${escapeHtml(h.name)} : avancez ${escapeHtml(h.figurine)} au milieu.` : ""}${mechant
-      ? ` Pour ${escapeHtml(nomMilieu(mechant.nom))}, sortez une figurine cachée jusqu'ici : effet garanti !` : ""}</p>
-    <p class="hint">Après la scène, prenez-la en photo avec « 📸 Photo » : elle s'ajoutera à l'histoire.</p></div>`;
+  let t = `🧸 ${playmoLieu(lieu)}`;
+  if (h && h.figurine) t += ` Avancez la figurine de ${h.name} (${h.figurine}).`;
+  if (mechant) t += ` Gardez une figurine cachée pour ${nomMilieu(mechant.nom)} jusqu'au dernier moment !`;
+  return t;
 }
 
-function stepHead(st, kicker, titre, idx) {
-  return `<header class="step-head">
-    <div><div class="step-kicker">${kicker}</div><h3>${titre}</h3></div>
-    ${turnChip(st, idx)}
-  </header>`;
+// Les choix du défi : qui, avec quel talent, puis le dé
+function defiControles(st, c, action, talentDefaut, manuels, solutions) {
+  const h = heroAt(st, c.heroIdx);
+  const qui = st.heroes.length > 1 ? `<div class="ctrl"><div class="ctrl-label">Qui agit ?</div>
+    <div class="mini-choices live-who">${st.heroes.map((x, i) => `
+      <button type="button" class="choice${i === c.heroIdx ? " selected" : ""}" data-value="${i}">${x.emoji} ${escapeHtml(x.name)}</button>`).join("")}</div></div>` : "";
+  const talents = `<div class="ctrl"><div class="ctrl-label">${solutions ? "Ce que tentent les enfants" : "Avec quoi ?"}</div>
+    <div class="talent-grid live-talents">${Object.entries(TALENTS).map(([id, t]) => `
+      <button type="button" class="choice talent-btn${id === talentDefaut ? " selected" : ""}" data-value="${id}">
+        <span class="t-nom">${t.emoji} ${t.nom}</span>
+        <span class="t-diff">${DIFFICULTES[c.difficultes[id]].texte}</span>
+        ${solutions ? `<span class="t-sol">${escapeHtml(solutions[id])}${c.essais && c.essais.includes(id) ? " (déjà essayé)" : ""}</span>` : ""}
+        ${!solutions && c.conseil === id ? `<span class="t-tag">conseillé</span>` : ""}
+      </button>`).join("")}</div>
+    ${(c.raisons || []).length ? `<ul class="raisons">${c.raisons.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}</ul>` : ""}</div>`;
+  const de = deMode() === "site"
+    ? diceRollerHTML({ target: c.difficultes[talentDefaut], apply: action })
+    : `<div class="ctrl"><div class="ctrl-label">Lancez votre dé, puis touchez le résultat</div>
+       <div class="manuel">${manuels.map(([v, l]) => `<button class="btn" data-live="${action}" data-res="${v}">${l}</button>`).join("")}</div></div>`;
+  const liens = [];
+  if (h && !h.pouvoir) liens.push(`<button class="lien" data-live="${action}" data-res="pouvoir">✨ Utiliser le pouvoir de ${escapeHtml(h.name)} (${escapeHtml(h.power)}) : réussi sans dé</button>`);
+  return `${qui}${talents}${de}${liens.length ? `<div class="liens">${liens.join("")}</div>` : ""}`;
 }
 
+const MANUELS = [["crit", "🌟 6"], ["ok", "✅ Réussi"], ["oops", "🌀 2 ou 3"], ["fumble", "🙈 1"]];
+
+/* ---------------- Les cartes, une par étape ---------------- */
 function renderLiveCurrent(st) {
   const c = st.current;
   const etape = `Étape ${Math.min(st.step + 1, st.nbScenes)} sur ${st.nbScenes}`;
 
   if (c.kind === "choix") {
-    return `<section class="live-current">
-      ${stepHead(st, etape, `🧭 ${escapeHtml(c.question)}`, null)}
-      <p class="step-help">${c.chooser ? `C'est <strong>${escapeHtml(c.chooser)}</strong> qui choisit (ou tout le monde vote). Lisez les deux lieux :` : "Lisez les deux lieux, les enfants choisissent (ou votent) :"}</p>
-      <div class="live-options">${c.options.map((o, i) => `
-        <button class="live-option" data-live="choose" data-index="${i}">
-          <strong>${o.special === "secondeChance" ? "↩️ " : "📍 "}${escapeHtml(o.lieu.nom)}</strong>
-          <span>${o.special === "secondeChance" ? "Retourner aider quelqu'un qui en avait besoin…" : escapeHtml(o.lieu.description)}</span>
-          ${o.bonus ? `<em class="option-bonus">🌈 ${escapeHtml(o.bonus)}</em>` : ""}
-        </button>`).join("")}</div>
-    </section>`;
+    return carte({
+      etiquette: etape,
+      titre: escapeHtml(c.question),
+      corps: `${aide([c.chooser ? `C'est ${c.chooser} qui choisit (ou tout le monde vote).` : "Les enfants choisissent (ou votent)."])}
+        <div class="options">${c.options.map((o, i) => `
+          <button class="live-option option" data-live="choose" data-index="${i}">
+            <strong>${escapeHtml(o.lieu.nom)}</strong>
+            <span>${o.special === "secondeChance" ? "Retourner aider quelqu'un qui en avait besoin…" : escapeHtml(o.lieu.description)}</span>
+            ${o.bonus ? `<em class="option-bonus">🌈 ${escapeHtml(o.bonus)}</em>` : ""}
+          </button>`).join("")}</div>`,
+    });
   }
+
   if (c.kind === "suspense") {
-    return `<section class="live-current suspense">
-      ${stepHead(st, c.final ? "Juste avant la grande fin" : etape, "⏳ Moment de suspense", null)}
-      ${readBlock(c.lire, "Lisez lentement, en baissant la voix")}
-      <p class="step-help">🎭 ${escapeHtml(c.conseil)}</p>
-      <div class="step-actions"><button class="btn btn-big btn-reveal" data-live="reveal">👀 Révéler la suite</button></div>
-    </section>`;
+    return carte({
+      etiquette: c.final ? "Juste avant la fin" : etape,
+      titre: "Chut… moment de suspense",
+      corps: `${aLire(c.lire)}${aide([`🎭 ${c.conseil}`])}`,
+      actions: `<button class="btn btn-big btn-reveal" data-live="reveal">👀 Révéler</button>`,
+      cls: "suspense",
+    });
   }
+
+  if (c.kind === "scene" && c.phase !== "defi") {
+    const lignes = c.lire.slice(c.dejaLu || 0);
+    return carte({
+      etiquette: `${etape} · ${c.lieu.nom}`,
+      titre: c.dejaLu ? "La suite…" : escapeHtml(c.lieu.nom),
+      corps: `${aLire(lignes)}${aide([c.interaction, playmoAide(st, c.lieu, null, c.heroIdx)].concat(c.notes || []))}`,
+      actions: `<button class="btn btn-big" data-live="phase" data-v="defi">Le défi →</button>`,
+    });
+  }
+
   if (c.kind === "scene") {
-    const d = c.defi;
-    const boutons = c.type === "rencontre"
-      ? [["crit", "🌟 6"], ["ok", "✅ Aidé"], ["oops", "🌀 Aidé, mais…"], ["fumble", "🙈 1"], ["non", "🚶 Pas aidé", true]]
-      : [["crit", "🌟 6"], ["ok", "✅ Réussi"], ["oops", "🌀 Raté (2-3)"], ["fumble", "🙈 1"]];
-    const nonAide = c.type === "rencontre" && deMode() === "site"
-      ? `<div class="power-row"><button class="btn btn-small btn-ghost" data-live="resolve" data-res="non">🚶 Les héros décident de ne pas aider</button></div>` : "";
-    return `<section class="live-current">
-      ${stepHead(st, `${etape}${c.type === "rencontre" ? " · 🤝 Rencontre" : ""}`, `📍 ${escapeHtml(c.lieu.nom)}`, c.heroIdx)}
-      ${livePlaymo(st, c.lieu, null, c.heroIdx)}
-      ${readBlock(c.lire)}
-      <div class="block block-kids"><div class="block-label">② Faites participer</div><p>${escapeHtml(c.interaction)}</p></div>
-      ${playBlock(st, c, "resolve", d.talent, boutons, true)}
-      ${nonAide}
-      ${outcomesDetails(d, heroAt(st, c.heroIdx), c.type === "rencontre" ? " Aider avec la Force bouscule un peu : la réputation baisse." : "")}
-    </section>`;
+    const h = heroAt(st, c.heroIdx);
+    const manuels = c.type === "rencontre" ? MANUELS.concat([["non", "🚶 Pas aidé"]]) : MANUELS;
+    return carte({
+      etiquette: c.type === "rencontre" ? "Rencontre" : "Le défi",
+      titre: h ? `Au tour de ${h.emoji} ${escapeHtml(h.name)} !` : "Le défi",
+      corps: `<blockquote class="rappel">${escapeHtml(nommer(c.defi.texte, h))}</blockquote>
+        ${defiControles(st, { ...c, conseil: c.defi.talent }, "resolve", c.defi.talent, manuels)}
+        <div class="liens">
+          ${c.type === "rencontre" && deMode() === "site" ? `<button class="lien" data-live="resolve" data-res="non">🚶 Les héros décident de ne pas aider</button>` : ""}
+          <button class="lien" data-live="phase" data-v="lire">← Relire le texte</button>
+        </div>`,
+    });
   }
+
   if (c.kind === "imprevu") {
-    return `<section class="live-current imprevu">
-      ${stepHead(st, "Imprévu", "⚡ Il se passe quelque chose !", c.heroIdx)}
-      ${readBlock([c.texte, c.imp ? `Alors… ${c.imp.question}` : "Qu'est-ce que vous faites ?"])}
-      <p class="step-help">Laissez les enfants proposer une idée. Si elle est évidente, pas besoin de dé :
-        <button class="btn btn-small btn-ghost" data-live="imprevu" data-res="narr">💡 Bonne idée, ça marche sans dé</button></p>
-      ${playBlock(st, c, "imprevu", c.talent, [["crit", "🌟 6"], ["ok", "✅ Réussi"], ["oops", "🌀 Raté (2-3)"], ["fumble", "🙈 1"]])}
-      ${c.imp ? `<details class="block block-gm"><summary>🎭 Pour vous : ce qui se passe selon le dé</summary>
-        <div class="outcomes">
-          <div class="outcome ok"><strong>✅ Ça marche</strong><p>${escapeHtml(nommer(c.imp.ok, heroAt(st, c.heroIdx)))}</p><p class="hint">${escapeHtml(SUITE_LABEL[c.imp.effetOk] || "")}</p></div>
-          <div class="outcome oops"><strong>🌀 Oui, mais…</strong><p>${escapeHtml(nommer(c.imp.rate, heroAt(st, c.heroIdx)))}</p><p class="hint">${escapeHtml(SUITE_LABEL[c.imp.effetRate] || "")}</p></div>
-        </div></details>` : ""}
-    </section>`;
+    const h = heroAt(st, c.heroIdx);
+    return carte({
+      etiquette: "Imprévu !",
+      titre: h ? `Imprévu pour ${h.emoji} ${escapeHtml(h.name)} !` : "Un imprévu !",
+      corps: `${aLire([c.texte, c.imp ? c.imp.question : "Qu'est-ce que vous faites ?"])}
+        <div class="liens"><button class="lien lien-fort" data-live="imprevu" data-res="narr">💡 Les enfants ont une bonne idée : ça marche sans dé</button></div>
+        ${defiControles(st, { ...c, conseil: c.talent }, "imprevu", c.talent, MANUELS)}`,
+      cls: "imprevu",
+    });
   }
+
+  if (c.kind === "resultat") {
+    return carte({
+      etiquette: "Résultat · à lire",
+      titre: escapeHtml(c.entrees[0].titre.replace(/^\S+\s/, "")),
+      corps: c.entrees.map((e, i) => `${i > 0 ? `<h3 class="sous-titre">${escapeHtml(e.titre)}</h3>` : ""}${aLire(e.lignes.filter((l, j) => !(c.sauter && i === 0 && j < c.sauter)))}`).join(""),
+      actions: `<button class="btn btn-big" data-live="continuer">Continuer →</button>`,
+      cls: "resultat",
+    });
+  }
+
   if (c.kind === "rival") {
-    return `<section class="live-current">
-      ${stepHead(st, "Juste avant la fin", "⚡ Un rival revient !", null)}
-      ${readBlock(c.lire)}
-      <p class="step-help">${escapeHtml(c.notes.join(" "))}</p>
-      <div class="step-actions">
-        <button class="btn btn-big" data-live="rival" data-res="ami">🤝 Devenu ami</button>
-        <button class="btn btn-big btn-ghost" data-live="rival" data-res="enfui">💨 Échappé</button>
-      </div>
-    </section>`;
+    return carte({
+      etiquette: "Juste avant la fin",
+      titre: "Un rival revient !",
+      corps: `${aLire(c.lire)}${aide(c.notes)}`,
+      actions: `<button class="btn btn-big" data-live="rival" data-res="ami">🤝 Devenu ami</button>
+        <button class="btn btn-big btn-ghost" data-live="rival" data-res="enfui">💨 Échappé</button>`,
+    });
   }
+
+  if (c.kind === "finale" && c.phase !== "defi") {
+    return carte({
+      etiquette: "La grande fin",
+      titre: escapeHtml(st.finaleLieu.nom),
+      corps: `${aLire(c.lire)}${aide([playmoAide(st, st.finaleLieu, st.mechant, c.heroIdx)].concat(c.notes || []))}`,
+      actions: `<button class="btn btn-big" data-live="phase" data-v="defi">Que font les héros ? →</button>`,
+      cls: "finale",
+    });
+  }
+
   if (c.kind === "finale") {
-    const m = st.mechant;
+    const h = heroAt(st, c.heroIdx);
     const defaut = c.essais.includes("coeur") ? "malin" : "coeur";
-    return `<section class="live-current finale">
-      ${stepHead(st, "La grande fin", `🏁 ${escapeHtml(st.finaleLieu.nom)}`, c.heroIdx)}
-      ${livePlaymo(st, st.finaleLieu, st.mechant, c.heroIdx)}
-      ${readBlock(c.lire)}
-      <div class="block block-kids"><div class="block-label">② Les solutions possibles</div>
-        <p class="hint">Le secret : ${escapeHtml(m.raison)}.</p>
-        <ul class="solutions">${Object.entries(m.solutions).map(([t, txt]) => `
-          <li>${talentBadge(t)} ${escapeHtml(txt)}${c.essais.includes(t) ? " <em>(déjà essayé)</em>" : ""}</li>`).join("")}</ul>
-      </div>
-      ${playBlock(st, c, "finale", defaut, [["crit", "🌟 6"], ["ok", "✅ Ça marche"], ["oops", "🌀 Pas encore", true], ["fumble", "🙈 1", true]], true)}
-    </section>`;
+    return carte({
+      etiquette: "La grande fin",
+      titre: h ? `Au tour de ${h.emoji} ${escapeHtml(h.name)} !` : "Que font les héros ?",
+      corps: `${aide([`Le secret : ${st.mechant.raison}.`, "Toute bonne idée des enfants marche : choisissez la solution la plus proche."])}
+        ${defiControles(st, c, "finale", defaut, [["crit", "🌟 6"], ["ok", "✅ Ça marche"], ["oops", "🌀 Pas encore"], ["fumble", "🙈 1"]], st.mechant.solutions)}
+        <div class="liens"><button class="lien" data-live="phase" data-v="lire">← Relire le texte</button></div>`,
+      cls: "finale",
+    });
   }
+
   // Fin
   const heroes = st.ctx && st.ctx.heroes ? st.ctx.heroes : [];
   const exploitsDe = (name) => {
-    const h = st.heroes.find((x) => x.name === name);
-    return h ? h.exploits.slice(0, 2).join(" ; ") : "";
+    const x = st.heroes.find((y) => y.name === name);
+    return x ? x.exploits.slice(0, 2).join(" ; ") : "";
   };
-  return `<section class="live-current ending">
-    ${stepHead(st, "Fin de l'aventure", "⭐ Le moment de fierté", null)}
-    <p class="step-help">Chacun à son tour (adultes compris) dit <em>ce que son héros a fait de mieux</em> et <em>ce qu'il a préféré</em>. Donnez une dernière étoile à chacun.</p>
-    ${st.mode === "saga" ? `
+  return carte({
+    etiquette: "Fin de l'aventure",
+    titre: "⭐ Le moment de fierté",
+    corps: `${aLire(["Chacun à son tour, adultes compris, dit ce que son héros a fait de mieux, et ce qu'il a préféré dans l'histoire.", "Donnez une dernière étoile à chacun !"])}
+      ${st.heroes.length ? aide([`Les étoiles : ${st.heroes.map((x) => `${x.name} ${x.etoiles} ✨`).join(" · ")}`]) : ""}
+      ${st.mode === "saga" ? `
       <form class="live-save">
-        ${heroes.map((h, i) => `<label class="small-label" for="lx-${i}">⭐ Exploit de ${escapeHtml(h.name)}</label>
-          <input type="text" id="lx-${i}" class="exploit" data-hero="${escapeHtml(h.name)}" maxlength="160" value="${escapeHtml(exploitsDe(h.name))}">`).join("")}
+        ${heroes.map((x, i) => `<label class="small-label" for="lx-${i}">⭐ Exploit de ${escapeHtml(x.name)}</label>
+          <input type="text" id="lx-${i}" class="exploit" data-hero="${escapeHtml(x.name)}" maxlength="160" value="${escapeHtml(exploitsDe(x.name))}">`).join("")}
         <label class="small-label" for="lx-inv">✨ Ce que les enfants ont inventé (un par ligne)</label>
         <textarea id="lx-inv" rows="2">${escapeHtml(st.inventions.join("\n"))}</textarea>
         <label class="small-label" for="lx-obj">🎒 Objets trouvés (un par ligne)</label>
-        <textarea id="lx-obj" rows="2"></textarea>
+        <textarea id="lx-obj" rows="2">${escapeHtml((st.objets || []).join("\n"))}</textarea>
         <label class="small-label" for="lx-notes">📝 Autre chose à retenir ?</label>
         <textarea id="lx-notes" rows="2"></textarea>
         <div class="form-actions"><button type="submit" class="btn btn-big">📚 Enregistrer dans la saga</button></div>
-      </form>` : `
-      <div class="step-actions">
-        <button class="btn print-btn btn-ghost" onclick="window.print()">🖨️ Imprimer notre histoire</button>
-        <button class="btn btn-big" data-live="quit">🔁 Nouvelle partie</button>
-      </div>`}
-  </section>`;
-}
-
-function renderHeroStrip(st) {
-  const fini = st.current && st.current.kind === "fin";
-  return `<div class="hero-strip no-print">
-    ${st.heroes.map((h, i) => `
-      <div class="hero-token${st.current && st.current.heroIdx === i ? " active" : ""}">
-        <div class="ht-name">${h.emoji} ${escapeHtml(h.name)}</div>
-        <div class="ht-stats">
-          <span class="ht-val" title="Cœurs">${"❤️".repeat(h.coeurs)}${"🤍".repeat(Math.max(0, 3 - h.coeurs))}</span>
-          ${fini ? "" : `<span class="ht-pm"><button data-live="hero" data-h="${i}" data-op="coeur-" aria-label="Perdre un cœur">−</button><button data-live="hero" data-h="${i}" data-op="coeur+" aria-label="Gagner un cœur">+</button></span>`}
-        </div>
-        <div class="ht-stats">
-          <span class="ht-val" title="Étoiles">✨ ${h.etoiles}</span>
-          ${fini ? "" : `<span class="ht-pm"><button data-live="hero" data-h="${i}" data-op="etoile-" aria-label="Dépenser une étoile">−</button><button data-live="hero" data-h="${i}" data-op="etoile+" aria-label="Gagner une étoile">+</button></span>`}
-          <span class="ht-power" title="Pouvoir magique">${h.pouvoir ? "pouvoir utilisé" : `${h.powerEmoji} pouvoir prêt`}</span>
-        </div>
-      </div>`).join("")}
-    <div class="hero-token rep-token">
-      <div class="ht-name">Réputation</div>
-      <div class="ht-val">${repLabel(st.reputation)}</div>
-      ${fini ? "" : `<div class="ht-rep">
-        <button data-live="rep" data-d="-1" title="Les héros ont été méchants ou brutaux">😠 Méchants</button>
-        <button data-live="rep" data-d="1" title="Les héros ont été très gentils">😇 Gentils</button>
-      </div>`}
-    </div>
-  </div>`;
+      </form>` : ""}
+      <h3 class="sous-titre">📜 Toute votre histoire</h3>
+      <div class="live-log histoire">${st.log.map(renderLogEntry).join("")}</div>`,
+    actions: st.mode === "saga" ? "" : `<button class="btn btn-ghost print-btn" onclick="window.print()">🖨️ Imprimer l'histoire</button>
+      <button class="btn btn-big" data-live="quit">Terminer</button>`,
+    cls: "ending",
+  });
 }
 
 function renderLogEntry(e) {
-  if (e.photo) {
-    return `<section class="live-entry photo"><h4>${escapeHtml(e.titre)}</h4>${photoHTML(e.photo, "")}</section>`;
-  }
+  if (e.photo) return `<section class="live-entry photo"><h4>${escapeHtml(e.titre)}</h4>${photoHTML(e.photo, "")}</section>`;
   return `<section class="live-entry ${e.cls || ""}">
     <h4>${escapeHtml(e.titre)}</h4>${e.lignes.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
     ${e.note ? e.note.split("\n").map((n) => `<p class="hint">${escapeHtml(n)}</p>`).join("") : ""}</section>`;
 }
 
+/* ---------------- Le menu ☰ ---------------- */
+function renderMenu(st) {
+  const m = st.mechant;
+  const fini = st.current.kind === "fin";
+  return `<div class="jeu-menu" role="dialog" aria-label="Menu de la partie">
+    <div class="jeu-menu-head"><strong>Menu de la partie</strong><button class="btn btn-small" data-live="menu">Fermer ✕</button></div>
+
+    ${st.heroes.length ? `<section class="menu-bloc"><h3>Les héros</h3>
+      ${st.heroes.map((h, i) => `<div class="menu-hero">
+        <div class="mh-nom">${h.emoji} ${escapeHtml(h.name)}<small>${h.pouvoir ? "pouvoir utilisé" : `pouvoir : ${h.powerEmoji} ${escapeHtml(h.power)}`}</small></div>
+        <div class="mh-ligne"><span>${"❤️".repeat(h.coeurs)}${"🤍".repeat(Math.max(0, 3 - h.coeurs))}</span>
+          <span class="mh-pm"><button data-live="hero" data-h="${i}" data-op="coeur-" aria-label="Enlever un cœur">−</button><button data-live="hero" data-h="${i}" data-op="coeur+" aria-label="Ajouter un cœur">+</button></span></div>
+        <div class="mh-ligne"><span>✨ ${h.etoiles}</span>
+          <span class="mh-pm"><button data-live="hero" data-h="${i}" data-op="etoile-" aria-label="Enlever une étoile">−</button><button data-live="hero" data-h="${i}" data-op="etoile+" aria-label="Ajouter une étoile">+</button></span></div>
+      </div>`).join("")}</section>` : ""}
+
+    <section class="menu-bloc"><h3>Réputation : ${repLabel(st.reputation)}</h3>
+      <p class="hint">Gentils : le Cœur marche mieux. Durs ou méchants : la Force marche moins bien.</p>
+      ${fini ? "" : `<div class="menu-row">
+        <button class="btn btn-small btn-ghost" data-live="rep" data-d="-1">😠 Ils ont été méchants</button>
+        <button class="btn btn-small btn-ghost" data-live="rep" data-d="1">😇 Ils ont été gentils</button></div>`}
+    </section>
+
+    ${fini ? "" : `<section class="menu-bloc"><h3>Noter une idée des enfants</h3>
+      <form class="idea-form"><input type="text" id="idea-input" maxlength="100" placeholder="Ex. : Croquette, un chat volant" aria-label="Idée des enfants">
+        <button class="btn btn-small" type="submit">Noter</button></form>
+      <p class="hint">Elle reviendra plus tard dans l'histoire.</p></section>`}
+
+    <details class="menu-bloc"><summary><h3>🤫 Le secret de l'histoire</h3></summary>
+      <p>Le responsable : <strong>${escapeHtml(m.nom)}</strong>, ${escapeHtml(m.description)}. En vrai, ${escapeHtml(m.raison)}.</p>
+      <p>Compagnon pour Maman : ${escapeHtml(st.compagnon)}.</p>
+      <p>Amis : ${escapeHtml(st.allies.join(", ") || "aucun pour l'instant")}${st.secretConnu ? " · secret découvert" : ""}</p>
+      ${(st.ctx && st.ctx.gmExtra ? st.ctx.gmExtra : []).map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
+    </details>
+
+    <details class="menu-bloc"><summary><h3>📜 L'histoire jusqu'ici</h3></summary>
+      <div class="live-log">${st.log.map(renderLogEntry).join("")}</div>
+    </details>
+
+    <section class="menu-bloc"><h3>Réglages</h3>
+      <div class="menu-row"><span>Le dé :</span>
+        <button class="pill${deMode() === "site" ? " on" : ""}" data-live="demode" data-v="site">🎲 Celui du site</button>
+        <button class="pill${deMode() === "main" ? " on" : ""}" data-live="demode" data-v="main">✋ Notre dé</button></div>
+      <div class="menu-row"><span>Playmobil :</span>
+        <button class="pill${playmoOn() ? " on" : ""}" data-live="playmo" data-v="on">🧸 Oui</button>
+        <button class="pill${playmoOn() ? "" : " on"}" data-live="playmo" data-v="off">Non</button></div>
+    </section>
+
+    <section class="menu-bloc menu-row">
+      <button class="btn btn-ghost" data-live="pause">⏸ Pause (revenir au site)</button>
+      <button class="btn btn-danger" data-live="quit">Arrêter la partie</button>
+    </section>
+  </div>`;
+}
+
+/* ---------------- L'écran complet ---------------- */
 function renderLiveHTML(st) {
   const theme = liveTheme(st);
-  const m = st.mechant;
-  const ouverts = st.fils.filter((f) => f.type !== "secondeChance").length;
-  const actif = st.current && st.current.kind !== "fin";
-  // Pendant la partie : seulement les 2 dernières étapes, le reste se replie
-  const visibles = actif ? 2 : st.log.length;
-  const anciens = st.log.slice(0, Math.max(0, st.log.length - visibles));
-  const recents = st.log.slice(Math.max(0, st.log.length - visibles));
-  const mode = deMode();
+  if (st.pause) {
+    return `<div class="live reprise">
+      <p><strong>⏸ Une partie est en pause :</strong> ${escapeHtml(st.titre)} (${escapeHtml(theme.nom)}).</p>
+      <div class="menu-row"><button class="btn btn-big" data-live="reprendre">▶️ Reprendre la partie</button>
+      <button class="btn btn-ghost" data-live="quit">Arrêter</button></div></div>`;
+  }
+  const actif = st.current.kind !== "fin";
+  const enCours = st.current.kind === "resultat" && st.current.suite ? st.current.suite : st.current;
+  const tour = enCours && enCours.heroIdx !== undefined ? enCours.heroIdx : null;
   return `
-    <article class="adventure live theme-${theme.id}">
-      <header class="adv-header live-head">
-        <div class="adv-emoji">${theme.emoji}</div>
-        <div class="live-head-text">
-          <p class="adv-world">▶️ En direct · ${escapeHtml(theme.nom)}${st.ctx ? ` · 📚 Épisode ${st.ctx.numero} sur ${st.ctx.total}` : ""}</p>
-          <h2>${escapeHtml(st.titre)}</h2>
-        </div>
-        <div class="live-head-tools no-print">
-          <button class="btn btn-small btn-ghost" data-live="undo"${st.undo && st.undo.length ? "" : " disabled"}>↩️ Annuler</button>
-          <button class="btn btn-small btn-ghost" data-live="quit">✕ Arrêter</button>
-        </div>
+    <div class="live jeu theme-${theme.id}">
+      <header class="jeu-bar">
+        <span class="jeu-emoji">${theme.emoji}</span>
+        <div class="jeu-titre"><small>${escapeHtml(theme.nom)}${st.ctx ? ` · Épisode ${st.ctx.numero}/${st.ctx.total}` : ""}</small><strong>${escapeHtml(st.titre)}</strong></div>
+        <button class="btn btn-small jeu-menu-btn" data-live="menu">☰ Menu</button>
       </header>
-      ${renderHeroStrip(st)}
-      ${actif ? `<div class="live-tools no-print">
-        <button class="btn btn-small btn-imprevu" data-live="add-imprevu">⚡ Un imprévu !</button>
-        <form class="idea-form"><input type="text" id="idea-input" maxlength="100" placeholder="Une idée des enfants à retenir…" aria-label="Idée des enfants">
-          <button class="btn btn-small btn-ghost" type="submit">✨ Noter</button></form>
-        <label class="btn btn-small btn-ghost photo-btn">📸 Photo<input type="file" accept="image/*" capture="environment" data-live-photo hidden></label>
-        <div class="de-switch" role="group" aria-label="Quel dé ?">
-          <span>Dé :</span>
-          <button class="${mode === "site" ? "on" : ""}" data-live="demode" data-v="site">🎲 du site</button>
-          <button class="${mode === "main" ? "on" : ""}" data-live="demode" data-v="main">✋ le mien</button>
-        </div>
-      </div>` : ""}
-      <details class="gm-box">
-        <summary>🤫 Pour vous seulement : le secret de l'histoire</summary>
-        <p>Le responsable : <strong>${escapeHtml(m.nom)}</strong>, ${escapeHtml(m.description)}. En vrai, <strong>${escapeHtml(m.raison)}</strong>.</p>
-        <p>🦉 Compagnon pour Maman : ${escapeHtml(st.compagnon)}.</p>
-        <p>Réputation : ${repLabel(st.reputation)} (${st.reputation > 0 ? "+" : ""}${st.reputation}) · Talents utilisés : 💪 ${st.talents.force} · 🧠 ${st.talents.malin} · ❤️ ${st.talents.coeur}</p>
-        <p>🤝 Amis : ${escapeHtml(st.allies.join(", ") || "aucun pour l'instant")} · 🧵 Fils ouverts : ${ouverts}${st.secretConnu ? " · 🔑 secret découvert" : ""}</p>
-        ${(st.ctx && st.ctx.gmExtra ? st.ctx.gmExtra : []).map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
-        <p class="hint gm-hint">Gentils : le Cœur marche mieux. Durs ou méchants : la Force marche moins bien. Toujours le même talent : plus difficile. Talent jamais utilisé : plus facile. Si les enfants sont méchants dans ce qu'ils racontent, cliquez « 😠 Méchants ».</p>
-      </details>
-      <div class="live-log">
-        ${anciens.length ? `<details class="log-older"><summary>📜 Relire le début de l'histoire (${anciens.length} passage${anciens.length > 1 ? "s" : ""})</summary>
-          <div class="live-log">${anciens.map(renderLogEntry).join("")}</div></details>` : ""}
-        ${recents.map(renderLogEntry).join("")}
-      </div>
+      ${st.heroes.length ? `<div class="jeu-equipe">${st.heroes.map((h, i) => `
+        <span class="equipier${i === tour ? " actif" : ""}">${h.emoji} ${escapeHtml(h.name)} <small>${"❤️".repeat(h.coeurs) || "💔"} ✨${h.etoiles}</small></span>`).join("")}</div>` : ""}
       ${renderLiveCurrent(st)}
-    </article>`;
+      ${actif ? `<nav class="jeu-actions no-print" aria-label="Actions rapides">
+        <button data-live="undo"${st.undo && st.undo.length ? "" : " disabled"}><span>↩️</span>Annuler</button>
+        <button data-live="add-imprevu"><span>⚡</span>Imprévu</button>
+        <label class="photo-btn"><span>📸</span>Photo<input type="file" accept="image/*" capture="environment" data-live-photo hidden></label>
+        <button data-live="boite"><span>🎴</span>Idées</button>
+      </nav>` : ""}
+      ${menuOuvert ? renderMenu(st) : ""}
+    </div>`;
 }
 
 // Réaffiche la partie là où elle se trouve (onglet Aventure ou onglet Saga)
 function refreshLive(scroll) {
   const st = loadLive();
+  const enJeu = !!(st && !st.pause);
+  document.body.classList.toggle("en-jeu", enJeu);
+  if (!st) menuOuvert = false;
   if (st && st.mode === "saga") {
+    if (enJeu && typeof showTab === "function") showTab("saga");
     if (typeof renderSaga === "function") renderSaga();
   } else {
     const out = document.getElementById("adventure-output");
     if (st) {
+      if (enJeu && typeof showTab === "function") showTab("aventure");
       out.innerHTML = renderLiveHTML(st);
       $("#print-adventure").hidden = true;
       $("#copy-link").hidden = true;
@@ -1105,10 +1150,7 @@ function refreshLive(scroll) {
       out.innerHTML = "";
     }
   }
-  if (scroll) {
-    const cur = document.querySelector(".live-current");
-    if (cur) cur.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+  if (scroll && enJeu && !menuOuvert) window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 /* ---------------- Choix des héros pour une partie simple ---------------- */
@@ -1121,13 +1163,29 @@ function renderLiveHeroChoice() {
         const type = HERO_TYPES.find((t) => t.id === h.type) || HERO_TYPES[0];
         return `<label class="hero-check"><input type="checkbox" name="live-hero" value="${h.id}" checked> ${type.emoji} ${escapeHtml(h.name)}</label>`;
       }).join("")}</div>
-      <p class="hint">En mode direct, les héros cochés sont appelés par leur nom, chacun son tour, avec leurs cœurs, étoiles et pouvoirs.</p>`
+      <p class="hint">Les héros cochés sont appelés par leur nom, chacun son tour.</p>`
     : `<p class="hint">Aucun héros pour l'instant. <a href="#heros">Créez les héros des enfants</a> : ils seront appelés par leur nom dans l'histoire, chacun son tour.</p>`;
 }
 
 function selectedLiveHeroes() {
   const ids = [...document.querySelectorAll('input[name="live-hero"]:checked')].map((i) => i.value);
   return loadHeroes().filter((h) => ids.includes(h.id));
+}
+
+// Après une action qui donne un résultat, on l'affiche en grand avant de continuer
+function avecResultat(fn) {
+  return (st) => {
+    const avant = st.log.length;
+    const c = st.current || {};
+    const deja = c.lire ? c.lire : (c.texte ? [c.texte] : []);
+    fn(st);
+    const nouvelles = st.log.slice(avant).filter((e) => !e.photo);
+    if (nouvelles.length) {
+      // Le texte déjà lu n'est pas répété : on ne garde que ce qui vient de se passer
+      const sauter = deja.length && nouvelles[0].lignes[0] === deja[0] ? deja.length : 0;
+      st.current = { kind: "resultat", entrees: nouvelles, sauter, suite: st.current };
+    }
+  };
 }
 
 function initLive() {
@@ -1143,9 +1201,9 @@ function initLive() {
       const themeId = selectedValue($("#theme-choices"));
       const lengthId = selectedValue($("#length-choices"));
       history.replaceState(null, "", "#aventure");
+      menuOuvert = false;
       saveLive(startLive(themeId, lengthId, randomSeed(), null, selectedLiveHeroes()));
-      refreshLive(false);
-      document.getElementById("adventure-output").scrollIntoView({ behavior: "smooth" });
+      refreshLive(true);
     };
     if (loadLive()) askConfirm("Une partie est déjà en cours. La remplacer par une nouvelle ?", go, "Nouvelle partie");
     else go();
@@ -1165,14 +1223,29 @@ function initLive() {
     const talent = talentSel ? talentSel.dataset.value : "force";
     const whoSel = host ? host.querySelector(".live-current .live-who .choice.selected") : null;
     const who = whoSel ? parseInt(whoSel.dataset.value, 10) : null;
+    const garderMenu = ["hero", "rep", "demode", "playmo"].includes(btn.dataset.live);
+    if (!garderMenu && btn.dataset.live !== "menu") menuOuvert = false;
     switch (btn.dataset.live) {
       case "choose": liveAction((st) => chooseOption(st, parseInt(btn.dataset.index, 10))); break;
-      case "resolve": liveAction((st) => resolveScene(st, btn.dataset.res, talent, who)); break;
-      case "imprevu": liveAction((st) => resolveImprevu(st, btn.dataset.res, talent, who)); break;
-      case "rival": liveAction((st) => resolveRival(st, btn.dataset.res)); break;
-      case "finale": liveAction((st) => resolveFinale(st, talent, btn.dataset.res, who)); break;
+      case "resolve": liveAction(avecResultat((st) => resolveScene(st, btn.dataset.res, talent, who))); break;
+      case "imprevu": liveAction(avecResultat((st) => resolveImprevu(st, btn.dataset.res, talent, who))); break;
+      case "rival": liveAction(avecResultat((st) => resolveRival(st, btn.dataset.res))); break;
+      case "finale": liveAction(avecResultat((st) => resolveFinale(st, talent, btn.dataset.res, who))); break;
       case "reveal": liveAction((st) => revealSuspense(st)); break;
+      case "continuer": liveAction((st) => { st.current = st.current.suite; }); break;
+      case "phase": liveAction((st) => { st.current.phase = btn.dataset.v; }); break;
       case "add-imprevu": liveAction((st) => insertImprevu(st)); break;
+      case "boite": openAleas(true); break;
+      case "menu": menuOuvert = !menuOuvert; refreshLive(false); break;
+      case "pause": {
+        const st = loadLive(); st.pause = true; saveLive(st); refreshLive(false);
+        window.scrollTo({ top: 0 });
+        break;
+      }
+      case "reprendre": {
+        const st = loadLive(); st.pause = false; saveLive(st); refreshLive(true);
+        break;
+      }
       case "hero": liveAction((st) => {
         const h = st.heroes[parseInt(btn.dataset.h, 10)];
         if (!h) return;
@@ -1190,11 +1263,18 @@ function initLive() {
         [st.current, st.current && st.current.suite].forEach((c) => {
           if (c && c.difficultes) Object.assign(c, talentDifficulties(st, c.kind === "scene" ? c.base : 4, c.kind === "finale"));
         });
-      }); break;
+      }); toast("Réputation mise à jour"); break;
       case "demode": setDeMode(btn.dataset.v); refreshLive(false); break;
+      case "playmo": {
+        setPlaymo(btn.dataset.v === "on");
+        const pm = $("#playmo-mode");
+        if (pm) pm.checked = playmoOn();
+        refreshLive(false);
+        break;
+      }
       case "undo": liveUndo(); break;
       case "quit": {
-        const stop = () => { clearLive(); refreshLive(false); };
+        const stop = () => { menuOuvert = false; clearLive(); refreshLive(false); window.scrollTo({ top: 0 }); };
         const st = loadLive();
         if (st && st.current.kind !== "fin") askConfirm("Arrêter la partie en cours ?", stop, "Arrêter");
         else stop();
@@ -1210,10 +1290,12 @@ function initLive() {
     try {
       const id = await addPhotoFromFile(e.target.files[0]);
       liveAction((st) => {
-        const c = st.current && st.current.suite ? st.current.suite : st.current;
+        let c = st.current;
+        if (c && c.suite) c = c.suite;
         const lieu = c && c.lieu ? c.lieu.nom : (c && c.kind === "finale" ? st.finaleLieu.nom : "Notre scène");
         st.log.push({ titre: `📸 ${lieu}`, photo: id, lignes: [] });
       });
+      toast("📸 Photo ajoutée à l'histoire");
     } catch {
       notify("Impossible de lire cette photo. Essayez avec une autre image.");
     }
@@ -1227,8 +1309,9 @@ function initLive() {
       if (!value) return;
       liveAction((st) => {
         st.inventions.push(value);
-        st.log.push({ titre: "✨ Idée des enfants", lignes: [value], cls: "event", note: "Elle pourra revenir plus tard dans l'histoire." });
+        st.log.push({ titre: "✨ Idée des enfants", lignes: [value], cls: "event" });
       });
+      toast("✨ Idée notée : elle reviendra dans l'histoire");
       return;
     }
     if (!e.target.classList.contains("live-save")) return;
@@ -1237,11 +1320,13 @@ function initLive() {
     const lines = (sel) => f.querySelector(sel).value.split("\n").map((l) => l.trim()).filter(Boolean);
     const exploits = {};
     f.querySelectorAll(".exploit").forEach((el) => { exploits[el.dataset.hero] = el.value.trim(); });
+    document.body.classList.remove("en-jeu");
     finishLiveSaga(loadLive(), { exploits, inventions: lines("#lx-inv"), objets: lines("#lx-obj"), notes: f.querySelector("#lx-notes").value.trim() });
   });
 
   const st = loadLive();
   if (st && st.mode === "solo") refreshLive(false);
+  else if (st) document.body.classList.toggle("en-jeu", !st.pause);
 }
 
 initLive();

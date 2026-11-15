@@ -810,3 +810,131 @@ details.gm-box summary { cursor: pointer; font-family: "Fredoka", sans-serif; fo
 .scene-photo figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
 .live-entry.photo { border-left-color: #ef5b8a; }
 .livre .scene-photo img { margin: 0 auto; }
+
+/* ==========================================================
+   ÉCRAN DE JEU : une seule chose à la fois, en grand
+   ========================================================== */
+.en-jeu .site-header, .en-jeu .site-footer, .en-jeu .fab,
+.en-jeu #aventure > h1, .en-jeu #aventure > .lead, .en-jeu .generator,
+.en-jeu #saga > h1, .en-jeu #saga > .lead, .en-jeu .saga-header, .en-jeu .subtabs { display: none !important; }
+.en-jeu main { max-width: 760px; padding-top: 8px; padding-bottom: 110px; }
+.en-jeu #adventure-output { margin: 0; }
+
+.jeu { display: flex; flex-direction: column; gap: 12px; }
+.jeu-bar { display: flex; align-items: center; gap: 10px; padding: 6px 2px; }
+.jeu-emoji { font-size: 2rem; line-height: 1; }
+.jeu-titre { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.jeu-titre small { color: var(--muted); font-size: 0.8rem; }
+.jeu-titre strong { font-family: "Fredoka", sans-serif; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jeu-menu-btn { background: var(--ink); box-shadow: none; }
+
+.jeu-equipe { display: flex; flex-wrap: wrap; gap: 6px; }
+.equipier { background: var(--paper); border: 2px solid var(--line); border-radius: 999px; padding: 3px 12px; font-weight: 600; font-size: 0.95rem; }
+.equipier small { font-weight: 400; color: var(--muted); margin-left: 4px; }
+.equipier.actif { border-color: var(--green); background: #eafaf2; }
+
+/* La carte de l'étape */
+.carte { background: var(--paper); border-radius: 22px; padding: 22px 24px 24px; box-shadow: var(--shadow); border: none; display: block; overflow: visible; }
+.carte-etiquette { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.carte-titre { font-family: "Fredoka", sans-serif; font-size: 1.7rem; line-height: 1.2; margin: 4px 0 14px; text-wrap: balance; }
+.carte.suspense { background: #2d2a32; color: #fdf6ec; }
+.carte.suspense .carte-etiquette { color: #cfc6dd; }
+.carte.resultat { border-top: 6px solid var(--green); }
+.carte.imprevu { border-top: 6px solid var(--purple); }
+.carte.finale { border-top: 6px solid var(--primary); }
+
+.a-lire p { font-size: 1.25rem; line-height: 1.65; margin: 0 0 0.75em; max-width: 62ch; }
+.a-lire p:last-child { margin-bottom: 0; }
+.a-lire p.sus { font-style: italic; }
+.carte.suspense .a-lire p { color: #fdf6ec; }
+.carte-aide { list-style: none; margin: 16px 0 0; padding: 12px 14px; background: var(--bg); border-radius: 12px; display: grid; gap: 6px; font-size: 0.95rem; color: var(--ink); }
+.carte.suspense .carte-aide { background: rgba(255, 255, 255, 0.08); color: #e9e2f3; }
+.carte-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.carte-actions .btn-big { flex: 1 1 auto; text-align: center; }
+.sous-titre { font-size: 1rem; color: var(--muted); margin: 18px 0 6px; }
+
+/* Où aller ? */
+.options { display: grid; gap: 12px; margin-top: 14px; }
+.option { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 16px 18px; border: 3px solid var(--line); border-radius: 16px; background: #fff; cursor: pointer; font: inherit; color: var(--ink); }
+.option:hover, .option:focus-visible { border-color: var(--green); }
+.option strong { font-family: "Fredoka", sans-serif; font-size: 1.25rem; }
+.option span { color: var(--muted); }
+
+/* Le défi */
+.rappel { margin: 0 0 16px; padding: 12px 16px; border-left: 5px solid var(--accent); background: #f3f7ff; border-radius: 0 12px 12px 0; font-size: 1.15rem; line-height: 1.55; }
+.ctrl { margin-top: 14px; }
+.ctrl-label { font-family: "Fredoka", sans-serif; font-weight: 600; margin-bottom: 6px; }
+.talent-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.talent-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border: 3px solid var(--line); border-radius: 14px; background: #fff; cursor: pointer; text-align: left; font: inherit; color: var(--ink); min-width: 0; }
+.talent-btn.selected { border-color: var(--primary); background: #fff1ea; }
+.t-nom { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 1.05rem; }
+.t-diff { font-size: 0.9rem; color: var(--muted); }
+.t-tag { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #2b8a60; }
+.t-sol { font-size: 0.88rem; line-height: 1.35; margin-top: 4px; }
+.raisons { list-style: none; margin: 8px 0 0; padding: 0; font-size: 0.85rem; color: var(--muted); display: grid; gap: 2px; }
+.carte .roller { background: var(--bg); margin: 16px 0 0; padding: 14px; }
+.carte .die { width: 72px; height: 72px; padding: 9px; border-radius: 16px; }
+.carte .pip { width: 13px; height: 13px; }
+.carte .dice-area { min-height: 80px; }
+.carte .dice-suspense:empty, .carte .dice-result:empty { display: none; }
+.manuel { display: flex; flex-wrap: wrap; gap: 8px; }
+.manuel .btn { flex: 1 1 110px; font-size: 1.05rem; }
+.liens { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 14px; }
+.lien { border: none; background: none; padding: 4px 0; color: var(--primary-dark); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-align: left; }
+.lien-fort { color: #2b8a60; }
+
+/* Barre du bas */
+.jeu-actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; justify-content: center; gap: 4px;
+  padding: 8px max(12px, env(safe-area-inset-left, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-right, 0px));
+  background: var(--paper); border-top: 2px solid var(--line); box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.06); }
+.jeu-actions button, .jeu-actions label { flex: 0 1 120px; display: flex; flex-direction: column; align-items: center; gap: 2px; border: none; background: none; font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--ink); cursor: pointer; padding: 4px; border-radius: 10px; }
+.jeu-actions span { font-size: 1.4rem; line-height: 1; }
+.jeu-actions button:hover, .jeu-actions label:hover { background: var(--bg); }
+.jeu-actions button[disabled] { opacity: 0.35; cursor: default; }
+
+/* Menu ☰ */
+.jeu-menu { position: fixed; inset: 0 0 0 auto; width: min(460px, 100vw); z-index: 40; overflow-y: auto; background: var(--bg);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.2); padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; }
+.jeu-menu-head { display: flex; justify-content: space-between; align-items: center; font-family: "Fredoka", sans-serif; font-size: 1.2rem; }
+.menu-bloc { background: var(--paper); border-radius: 14px; padding: 12px 14px; }
+.menu-bloc h3 { font-size: 1rem; margin: 0 0 6px; display: inline; }
+.menu-bloc > h3 { display: block; }
+.menu-bloc summary { cursor: pointer; }
+.menu-bloc p { margin: 6px 0; font-size: 0.95rem; }
+.menu-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.menu-hero { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 0; border-bottom: 1px dotted var(--line); }
+.menu-hero:last-child { border-bottom: none; }
+.mh-nom { font-weight: 700; min-width: 7em; }
+.mh-pm { display: inline-flex; gap: 2px; }
+.mh-pm button { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; width: 28px; height: 26px; cursor: pointer; font: inherit; color: var(--ink); }
+.mh-pouvoir { color: var(--muted); font-size: 0.85rem; width: 100%; }
+.pill { border: 2px solid var(--line); background: var(--bg); border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; font-weight: 600; color: var(--ink); }
+.pill.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.jeu-menu .idea-form { display: flex; gap: 6px; }
+.jeu-menu .idea-form input { flex: 1; min-width: 0; font: inherit; padding: 6px 10px; border: 2px solid var(--line); border-radius: 10px; }
+.jeu-menu .live-log { margin-top: 8px; }
+
+/* Histoire relue à la fin */
+.histoire .live-entry { color: var(--ink); }
+.reprise { background: var(--paper); border: 2px dashed var(--green); border-radius: 16px; padding: 14px 18px; margin-top: 16px; }
+
+/* Petit message */
+.toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 60;
+  background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 600; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); transition: opacity 0.4s; }
+.toast.out { opacity: 0; }
+
+@media (max-width: 560px) {
+  .carte { padding: 18px 16px 20px; border-radius: 18px; }
+  .carte-titre { font-size: 1.45rem; }
+  .a-lire p { font-size: 1.12rem; }
+  .talent-grid { grid-template-columns: 1fr; }
+  .talent-btn { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  .t-sol { width: 100%; }
+  .en-jeu main { padding-left: 10px; padding-right: 10px; }
+}
+@media print { .jeu-actions, .jeu-menu, .jeu-menu-btn { display: none !important; } }
+.menu-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 12px; align-items: center; }
+.mh-nom { min-width: 0; font-weight: 700; display: flex; flex-direction: column; }
+.mh-nom small { font-weight: 400; color: var(--muted); font-size: 0.8rem; }
+.mh-ligne { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+@media (max-width: 400px) { .menu-hero { grid-template-columns: 1fr 1fr; } .mh-nom { grid-column: 1 / -1; } }
