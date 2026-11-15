@@ -112,7 +112,7 @@ function liveHeroFrom(h) {
   const power = POWERS.find((p) => p.id === h.power) || POWERS[0];
   return {
     id: h.id, name: h.name, emoji: type.emoji, talent: h.talent || "force",
-    power: power.nom, powerEmoji: power.emoji, item: h.item || "",
+    power: power.nom, powerEmoji: power.emoji, item: h.item || "", figurine: h.figurine || "",
     coeurs: 3, etoiles: 0, pouvoir: false, tours: 0, exploits: [],
   };
 }
@@ -239,7 +239,10 @@ function startLive(themeId, lengthId, seed, ctx = null, heroes = null) {
     : "Il faut des héros pour sauver la situation. Est-ce que vous acceptez la mission ?");
   if (ctx && ctx.recap) st.log.push({ titre: "📺 Précédemment…", lignes: ctx.recap, cls: "recap" });
   st.log.push({ titre: "🌅 Le début de l'histoire", lignes: intro,
-    note: team.length ? "Demandez à chaque enfant de présenter son héros en une phrase, avec une voix de héros !" : "" });
+    note: [team.length ? "Demandez à chaque enfant de présenter son héros en une phrase, avec une voix de héros !" : "",
+      playmoOn() && theme.playmo ? `🧸 Sortez : ${theme.playmo.liste}. ${theme.playmo.conseil}` : "",
+      playmoOn() && team.some((h) => h.figurine) ? `🧸 Figurines : ${team.filter((h) => h.figurine).map((h) => `${h.name} = ${h.figurine}`).join(" · ")}` : "",
+    ].filter(Boolean).join("\n") });
   st.introLignes = intro;
   st.current = makeChoice(st);
   return st;
@@ -872,6 +875,15 @@ function outcomesDetails(d, h, extraHint) {
   </details>`;
 }
 
+function livePlaymo(st, lieu, mechant, idx) {
+  if (!playmoOn()) return "";
+  const h = heroAt(st, idx);
+  return `<div class="block block-playmo"><div class="block-label">🧸 Installez la scène</div>
+    <p>${escapeHtml(playmoLieu(lieu))}${h && h.figurine ? ` Le tour de ${escapeHtml(h.name)} : avancez ${escapeHtml(h.figurine)} au milieu.` : ""}${mechant
+      ? ` Pour ${escapeHtml(nomMilieu(mechant.nom))}, sortez une figurine cachée jusqu'ici : effet garanti !` : ""}</p>
+    <p class="hint">Après la scène, prenez-la en photo avec « 📸 Photo » : elle s'ajoutera à l'histoire.</p></div>`;
+}
+
 function stepHead(st, kicker, titre, idx) {
   return `<header class="step-head">
     <div><div class="step-kicker">${kicker}</div><h3>${titre}</h3></div>
@@ -912,6 +924,7 @@ function renderLiveCurrent(st) {
       ? `<div class="power-row"><button class="btn btn-small btn-ghost" data-live="resolve" data-res="non">🚶 Les héros décident de ne pas aider</button></div>` : "";
     return `<section class="live-current">
       ${stepHead(st, `${etape}${c.type === "rencontre" ? " · 🤝 Rencontre" : ""}`, `📍 ${escapeHtml(c.lieu.nom)}`, c.heroIdx)}
+      ${livePlaymo(st, c.lieu, null, c.heroIdx)}
       ${readBlock(c.lire)}
       <div class="block block-kids"><div class="block-label">② Faites participer</div><p>${escapeHtml(c.interaction)}</p></div>
       ${playBlock(st, c, "resolve", d.talent, boutons, true)}
@@ -949,6 +962,7 @@ function renderLiveCurrent(st) {
     const defaut = c.essais.includes("coeur") ? "malin" : "coeur";
     return `<section class="live-current finale">
       ${stepHead(st, "La grande fin", `🏁 ${escapeHtml(st.finaleLieu.nom)}`, c.heroIdx)}
+      ${livePlaymo(st, st.finaleLieu, st.mechant, c.heroIdx)}
       ${readBlock(c.lire)}
       <div class="block block-kids"><div class="block-label">② Les solutions possibles</div>
         <p class="hint">Le secret : ${escapeHtml(m.raison)}.</p>
@@ -1014,9 +1028,12 @@ function renderHeroStrip(st) {
 }
 
 function renderLogEntry(e) {
+  if (e.photo) {
+    return `<section class="live-entry photo"><h4>${escapeHtml(e.titre)}</h4>${photoHTML(e.photo, "")}</section>`;
+  }
   return `<section class="live-entry ${e.cls || ""}">
     <h4>${escapeHtml(e.titre)}</h4>${e.lignes.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
-    ${e.note ? `<p class="hint">${escapeHtml(e.note)}</p>` : ""}</section>`;
+    ${e.note ? e.note.split("\n").map((n) => `<p class="hint">${escapeHtml(n)}</p>`).join("") : ""}</section>`;
 }
 
 function renderLiveHTML(st) {
@@ -1047,6 +1064,7 @@ function renderLiveHTML(st) {
         <button class="btn btn-small btn-imprevu" data-live="add-imprevu">⚡ Un imprévu !</button>
         <form class="idea-form"><input type="text" id="idea-input" maxlength="100" placeholder="Une idée des enfants à retenir…" aria-label="Idée des enfants">
           <button class="btn btn-small btn-ghost" type="submit">✨ Noter</button></form>
+        <label class="btn btn-small btn-ghost photo-btn">📸 Photo<input type="file" accept="image/*" capture="environment" data-live-photo hidden></label>
         <div class="de-switch" role="group" aria-label="Quel dé ?">
           <span>Dé :</span>
           <button class="${mode === "site" ? "on" : ""}" data-live="demode" data-v="site">🎲 du site</button>
@@ -1184,6 +1202,22 @@ function initLive() {
       }
       default:
     }
+  });
+
+  // Photo d'une scène (Playmobil, dessin…) ajoutée à l'histoire
+  document.addEventListener("change", async (e) => {
+    if (!e.target.matches("[data-live-photo]") || !e.target.files[0]) return;
+    try {
+      const id = await addPhotoFromFile(e.target.files[0]);
+      liveAction((st) => {
+        const c = st.current && st.current.suite ? st.current.suite : st.current;
+        const lieu = c && c.lieu ? c.lieu.nom : (c && c.kind === "finale" ? st.finaleLieu.nom : "Notre scène");
+        st.log.push({ titre: `📸 ${lieu}`, photo: id, lignes: [] });
+      });
+    } catch {
+      notify("Impossible de lire cette photo. Essayez avec une autre image.");
+    }
+    e.target.value = "";
   });
 
   document.addEventListener("submit", (e) => {

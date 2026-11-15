@@ -129,6 +129,7 @@ function heroCard(h) {
           <ul class="talents">${talents}</ul>
           <p><strong>${power.emoji} Pouvoir magique :</strong> ${escapeHtml(power.nom)} <small>(1 fois par aventure)</small></p>
           ${h.item ? `<p><strong>🎒 Objet :</strong> ${escapeHtml(h.item)}</p>` : ""}
+          ${h.figurine ? `<p><strong>🧸 Figurine :</strong> ${escapeHtml(h.figurine)}</p>` : ""}
           <div class="tokens">
             <div><strong>Cœurs</strong><div class="boxes">❤️ ❤️ ❤️</div></div>
             <div><strong>Étoiles</strong><div class="boxes">☆ ☆ ☆ ☆ ☆</div></div>
@@ -177,6 +178,7 @@ function initHeroes() {
       talent: selectedValue($("#hero-talents")),
       power: selectedValue($("#hero-powers")),
       item: $("#hero-item").value.trim(),
+      figurine: $("#hero-figurine").value.trim(),
     });
     saveHeroes(list);
     e.target.reset();
@@ -257,6 +259,7 @@ function renderAdventure(a) {
       return `
     <section class="scene">
       <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>
+      ${playmoTip(s.lieu)}
       <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}</div>
       ${sus}
       <p class="question">💬 <em>Demandez aux enfants : « ${escapeHtml(s.question)} »</em></p>
@@ -270,6 +273,7 @@ function renderAdventure(a) {
       return `
     <section class="scene">
       <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>
+      ${playmoTip(s.lieu)}
       <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}</div>
       ${sus}
       ${challenge(g, s.difficulte, "⚡ Défi")}
@@ -279,6 +283,7 @@ function renderAdventure(a) {
     return `
     <section class="scene">
       <h3><span class="scene-num">${s.numero}</span> ${escapeHtml(s.lieu.nom)}</h3>
+      ${playmoTip(s.lieu)}
       <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(s.lieu.description)}
         Pour continuer, il y a deux chemins possibles…</div>
       ${sus}
@@ -327,6 +332,8 @@ function renderAdventure(a) {
         <p>Le responsable de tout ça, c'est <strong>${escapeHtml(m.nom)}</strong>, ${escapeHtml(m.description)}.
           Mais en vrai, <strong>${escapeHtml(m.raison)}</strong>. Les héros pourront le découvrir pendant l'aventure.</p>
         <p>🦉 <strong>Compagnon suggéré pour Maman :</strong> ${escapeHtml(a.compagnon)}.</p>
+        ${playmoOn() && a.theme.playmo ? `<p>🧸 <strong>Figurines à sortir :</strong> ${escapeHtml(a.theme.playmo.liste)}. ${escapeHtml(a.theme.playmo.conseil)}</p>` : ""}
+        ${playmoOn() ? figurinesLine(heroes) : ""}
         ${heroList}
         ${(a.gmExtra || []).map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
         <p>🎒 Préparez : un dé, 3 jetons-cœurs et des jetons-étoiles par enfant, la carte « Pause ».</p>
@@ -353,6 +360,7 @@ function renderAdventure(a) {
 
       <section class="scene finale">
         <h3><span class="scene-num">🏁</span> La grande fin : ${escapeHtml(a.finale.lieu.nom)}</h3>
+        ${playmoTip(a.finale.lieu, m)}
         ${suspenseBlock(a.titre + a.finale.lieu.nom, SUSPENSES_FINALE)}
         <div class="read-aloud"><span class="label-small">📖 À lire</span>${escapeHtml(a.finale.lieu.description)}
           Et là, au milieu, se trouve ${escapeHtml(nomMilieu(m.nom))}, ${escapeHtml(m.description)}. C'est de là que viennent tous les problèmes !</div>
@@ -380,6 +388,24 @@ function renderAdventure(a) {
 
 let currentAdventure = null;
 
+/* ---------------- Mode Playmobil ---------------- */
+const PLAYMO_KEY = "petits-heros:playmo";
+function playmoOn() {
+  try { return localStorage.getItem(PLAYMO_KEY) === "on"; } catch { return false; }
+}
+function setPlaymo(on) {
+  try { localStorage.setItem(PLAYMO_KEY, on ? "on" : "off"); } catch { /* rien */ }
+}
+function playmoTip(lieu, mechant) {
+  if (!playmoOn()) return "";
+  return `<p class="playmo-tip">🧸 <strong>Mise en scène :</strong> ${escapeHtml(playmoLieu(lieu))}${mechant
+    ? ` Pour ${escapeHtml(nomMilieu(mechant.nom))}, choisissez une figurine spéciale (même un animal ou un personnage détourné, ça marche très bien !) et cachez-la jusqu'au dernier moment.` : ""}</p>`;
+}
+function figurinesLine(heroes) {
+  const avec = heroes.filter((h) => h.figurine);
+  return avec.length ? `<p>🧸 <strong>Les figurines des héros :</strong> ${avec.map((h) => `${escapeHtml(h.name)} = ${escapeHtml(h.figurine)}`).join(" · ")}</p>` : "";
+}
+
 function showAdventure(a) {
   currentAdventure = a;
   setAleasTheme(a.theme.id);
@@ -390,6 +416,13 @@ function showAdventure(a) {
 }
 
 function initAdventure() {
+  const pm = $("#playmo-mode");
+  pm.checked = playmoOn();
+  pm.addEventListener("change", () => {
+    setPlaymo(pm.checked);
+    if (currentAdventure && !(typeof loadLive === "function" && loadLive() && loadLive().mode === "solo")) showAdventure(currentAdventure);
+    if (typeof refreshLive === "function") refreshLive(false);
+  });
   renderChoices($("#theme-choices"), THEMES, { selected: THEMES[0].id });
   renderChoices($("#length-choices"), LENGTHS, { selected: LENGTHS[0].id, sub: (l) => l.desc });
   bindChoiceGroup($("#theme-choices"));

@@ -229,6 +229,11 @@
           <input id="hero-item" type="text" maxlength="40" placeholder="Ex. : une corde magique, un doudou lapin, une lampe…">
         </div>
 
+        <div class="form-step">
+          <label for="hero-figurine">6. 🧸 Quelle figurine joue ton héros ? <small>(optionnel)</small></label>
+          <input id="hero-figurine" type="text" maxlength="50" placeholder="Ex. : le pirate Playmobil à la jambe de bois">
+        </div>
+
         <div class="form-actions">
           <button type="button" class="btn btn-ghost" id="hero-random">🎲 Au hasard</button>
           <button type="submit" class="btn btn-big">✅ Enregistrer le héros</button>
@@ -256,6 +261,10 @@
         <div class="form-step">
           <span class="label">La durée</span>
           <div id="length-choices" class="choice-grid choice-grid-3"></div>
+        </div>
+        <div class="form-step">
+          <label class="playmo-toggle" for="playmo-mode"><input type="checkbox" id="playmo-mode"> 🧸 <strong>On joue avec des Playmobil</strong> (ou d'autres figurines)</label>
+          <p class="hint">Ajoute à chaque étape un conseil pour installer la scène sur la table. En jouant en direct, le bouton « 📸 Photo » ajoute vos photos de scènes à l'histoire.</p>
         </div>
         <div class="form-actions">
           <button class="btn btn-big" id="generate">✨ Générer une aventure</button>
@@ -321,10 +330,12 @@
   </footer>
 
   <script src="js/data.js"></script>
+  <script src="js/data-mondes2.js"></script>
   <script src="js/aleas.js"></script>
   <script src="js/generator.js"></script>
   <script src="js/saga-data.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/photos.js"></script>
   <script src="js/des.js"></script>
   <script src="js/direct.js"></script>
   <script src="js/saga.js"></script>

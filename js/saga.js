@@ -396,7 +396,7 @@ function finishLiveSaga(st, extras) {
     saga: { titre: saga.titre, numero: st.ctx.numero, total: st.ctx.total },
     heroes: saga.heroes,
     fin: st.ctx.fin,
-    recit: st.log.filter((e) => e.cls !== "recap").flatMap((e) => [e.titre].concat(e.lignes)),
+    recit: st.log.filter((e) => e.cls !== "recap").flatMap((e) => (e.photo ? [`[[photo:${e.photo}]]`] : [e.titre].concat(e.lignes))),
   };
   const bilan = {
     scenes: st.record.scenes.map((r) => ({ chemin: 1, res: r.res })),
@@ -556,7 +556,7 @@ function renderLivre(saga) {
       ${done.map((ep) => {
         const st = episodeStory(saga, ep);
         return `<section class="livre-ep"><h3>${escapeHtml(st.titre)}</h3><p class="livre-monde">${escapeHtml(st.monde)}</p>
-          ${st.paragraphes.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}</section>`;
+          ${st.paragraphes.map((t) => (t.startsWith("[[photo:") ? photoHTML(t.slice(8, -2), "") : `<p>${escapeHtml(t)}</p>`)).join("")}</section>`;
       }).join("")}
       ${saga.terminee ? `<p class="livre-fin">~ Fin ~</p>` : `<p class="livre-fin">… à suivre !</p>`}
     </article>`;
