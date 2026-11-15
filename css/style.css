@@ -793,3 +793,4 @@ details.gm-box summary { cursor: pointer; font-family: "Fredoka", sans-serif; fo
   .fab { padding: 10px 14px; font-size: 1rem; }
   .play-label { min-width: 0; width: 100%; }
 }
+.option-bonus { display: block; margin-top: 4px; color: #2b8a60; font-weight: 700; font-style: normal; font-size: 0.9rem; }

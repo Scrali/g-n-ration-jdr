@@ -306,6 +306,8 @@ function chooseOption(st, index) {
       const fil = ouverts[0];
       st.fils = st.fils.filter((f) => f !== fil);
       lire.push(fil.resolution);
+      if (fil.indice) lire.push(`🔎 Indice : ${st.indices.length ? st.indices.shift() : `le coupable, c'est ${nomMilieu(st.mechant.nom)}, et en vrai, ${st.mechant.raison}.`}`);
+      if (fil.objet) (st.objets = st.objets || []).push(fil.objet);
       if (fil.secret) { st.secretConnu = true; notes.push("🔑 Les héros connaissent maintenant le secret du méchant : la fin sera plus facile avec le Cœur et la ruse."); }
     }
     defi = chooseDefi(st, rng, type);
@@ -330,12 +332,24 @@ function chooseOption(st, index) {
   const idees = st.inventions.concat(st.ctx && st.ctx.inventions ? st.ctx.inventions : []);
   if (idees.length && rng() < 0.45) notes.push(`✨ Faites revenir une idée des enfants : ${pick(rng, idees)}.`);
 
+  if (st.objets && st.objets.length && rng() < 0.4) notes.push(`🎒 Dans le sac : ${pick(rng, st.objets)}. Si ça sert ici, pas besoin de dé !`);
+
   let base = 4;
   if (st.step === 0) base = 3;
   else if (st.lastRes === "oops") {
     base = 3;
     notes.push("🙂 Après le dernier « oui, mais… », ce défi-ci est plus facile.");
   }
+  if (opt.bonus || st.prochainFacile) {
+    base = Math.max(2, base - 1);
+    notes.push(opt.bonus ? "🌈 Ce chemin a été montré par l'imprévu : le défi est plus facile." : "🙂 Grâce à l'imprévu de tout à l'heure, ce défi est plus facile.");
+  }
+  if (st.prochainDifficile) {
+    base = Math.min(5, base + 1);
+    notes.push("😓 À cause de l'imprévu de tout à l'heure, ce défi est un peu plus difficile.");
+  }
+  st.prochainFacile = false;
+  st.prochainDifficile = false;
   const { difficultes, raisons } = talentDifficulties(st, base);
   const interaction = fill(pick(rng, INTERACTIONS), { hero: hero ? hero.name : "Quelqu'un" });
 
@@ -437,7 +451,8 @@ function resolveScene(st, res, talent, heroIdx) {
 
   let next;
   if (st.step < st.nbScenes) next = makeChoice(st);
-  if (next && rng() < 0.3) {
+  const recent = st.lastImprevuStep !== undefined && st.step - st.lastImprevuStep < 2;
+  if (next && !recent && rng() < 0.3) {
     st.pile.push(next);
     st.current = makeImprevu(st, rng);
   } else if (next) {
@@ -450,17 +465,129 @@ function resolveScene(st, res, talent, heroIdx) {
 }
 
 /* ---------------- Imprévus ---------------- */
+/*
+  Chaque imprévu a sa question, ses propres résultats, et surtout une SUITE :
+    pointe  : un des prochains chemins est désigné (plus facile)
+    facile  : le prochain défi est plus facile
+    retard  : le prochain défi est un peu plus difficile
+    indice  : un indice sur le méchant
+    objet   : un objet rejoint le sac (il pourra servir)
+    ami     : une créature devient votre amie et reviendra aider
+    soin    : tout le monde récupère 1 ❤️
+    etoile  : le héros gagne une étoile
+    coeur   : le héros perd 1 ❤️
+    fil     : l'histoire reste ouverte et revient plus tard (texte dans « retour »)
+  {creature} et {objet} sont choisis au moment de l'imprévu.
+*/
+const IMPREVUS_HISTOIRE = [
+  { texte: "Il se met à pleuvoir très fort. Il faut vite trouver un abri.", question: "Où vous abritez-vous ?", talent: "malin",
+    ok: "Les héros trouvent une petite grotte bien sèche… et dedans, quelqu'un s'abrite déjà : c'est {creature}, qui vous fait une petite place.", effetOk: "ami",
+    rate: "Trop tard : tout le monde est trempé jusqu'aux chaussettes. Atchoum !", effetRate: "retard" },
+  { texte: "Un animal minuscule s'accroche à un héros et ne veut plus le lâcher.", question: "Comment le rassurer ?", talent: "coeur",
+    ok: "Rassuré, l'animal grimpe sur l'épaule du héros et lui montre du bout de la patte un raccourci.", effetOk: "pointe",
+    rate: "L'animal ne lâche pas et chatouille le héros sans arrêt. Il finira bien par descendre… plus tard.", effetRate: "fil",
+    retour: "Le petit animal qui s'accrochait tout à l'heure saute enfin par terre… et vous rapporte {objet} en remerciement !" },
+  { texte: "Le ventre d'un héros gargouille si fort que tout le monde l'entend… même ceux qui ne devraient pas.", question: "Que faites-vous ?", talent: "malin",
+    ok: "Les héros partagent vite un goûter en silence. Le ventre se calme, et ça fait du bien à tout le monde.", effetOk: "soin",
+    rate: "GROOOOU ! Dans les buissons, quelque chose a tout entendu… et vous suit maintenant.", effetRate: "fil",
+    retour: "Ce qui vous suivait depuis le gros gargouillis se montre enfin : c'est {creature}, qui a faim aussi ! Vous partagez votre goûter, et vous voilà amis." },
+  { texte: "Un coup de vent emporte le chapeau (ou l'objet préféré) d'un héros.", question: "Comment le rattraper ?", talent: "force",
+    ok: "D'un bond, le héros rattrape son objet en plein vol. Quel champion !", effetOk: "etoile",
+    rate: "L'objet s'envole très loin, par-dessus les arbres…", effetRate: "fil",
+    retour: "Regardez là-haut ! L'objet emporté par le vent est accroché juste au-dessus du chemin. Une petite escalade et il est récupéré !" },
+  { texte: "On entend une musique au loin. D'où vient-elle ?", question: "Vous allez voir ?", talent: "coeur",
+    ok: "C'est {creature} qui joue de la flûte, et qui vous offre {objet} pour vous remercier d'avoir écouté.", effetOk: "objet",
+    rate: "La musique s'arrête net quand vous approchez. Quelqu'un vous a vus… et vous espionne.", effetRate: "fil",
+    retour: "Le musicien timide qui vous espionnait se montre enfin : c'est {creature}, qui vous confie un secret sur le coupable !", retourIndice: true },
+  { texte: "Le sol se met à trembler doucement…", question: "Que faites-vous ?", talent: "force",
+    ok: "Les héros se tiennent tous par la main et ne tombent pas. Le tremblement s'arrête : c'était {creature} qui ronflait sous la terre ! Une fois bien réveillés, vous voilà amis.", effetOk: "ami",
+    rate: "Tout le monde tombe sur les fesses, et un objet roule loin dans un trou.", effetRate: "fil",
+    retour: "Tiens ! L'objet qui avait roulé dans le trou ressort tout seul, poussé par {creature} qui habite là-dessous." },
+  { texte: "Un message tombe du ciel, accroché à un petit parachute.", question: "Arrivez-vous à le lire ?", talent: "malin",
+    ok: "Les héros déchiffrent le message.", effetOk: "indice",
+    rate: "Le message est écrit à l'envers… Impossible à lire pour l'instant. Gardez-le précieusement !", effetRate: "fil",
+    retour: "En regardant le message dans une flaque d'eau, comme dans un miroir, vous arrivez enfin à le lire !", retourIndice: true },
+  { texte: "Le Compagnon a disparu ! On l'entend ronfler quelque part tout près.", question: "Comment le retrouver ?", talent: "malin",
+    ok: "On le retrouve endormi dans un buisson… couché sur {objet} !", effetOk: "objet",
+    rate: "On le retrouve, mais il est encore tout endormi : il ne pourra pas vous aider au prochain défi.", effetRate: "retard" },
+  { texte: "Quelqu'un suit les héros en se cachant. (C'est un petit curieux tout gentil.)", question: "Comment le faire sortir de sa cachette ?", talent: "coeur",
+    ok: "C'est {creature}, qui voulait juste se faire des amis ! Vous voyagez ensemble désormais.", effetOk: "ami",
+    rate: "Impossible de le voir… mais il est toujours là, quelque part.", effetRate: "fil",
+    retour: "Le petit curieux qui vous suivait ose enfin se montrer : c'est {creature}, qui vous a vus être courageux et veut vous aider !" },
+  { texte: "Une odeur délicieuse de gâteau flotte dans l'air.", question: "On va voir ?", talent: "coeur",
+    ok: "C'est {creature} qui a fait un gâteau. Vous demandez poliment, et chacun a droit à une part : tout le monde récupère 1 ❤️.", effetOk: "soin",
+    rate: "Les héros ont mangé trop vite… gros mal de ventre !", effetRate: "retard" },
+  { texte: "Tout devient silencieux d'un coup… Plus un bruit.", question: "Qu'est-ce que vous faites ?", talent: "malin",
+    ok: "En écoutant bien, les héros entendent un tout petit appel au secours : {creature} n'arrive plus à sortir de sous une feuille géante. Vous la soulevez tous ensemble, et vous voilà amis.", effetOk: "ami",
+    rate: "Le silence dure, dure… puis un énorme ATCHOUM éclate ! Un héros sursaute si fort qu'il perd 1 ❤️.", effetRate: "coeur" },
+  { texte: "Un arc-en-ciel apparaît et semble montrer une direction.", question: "Vous le suivez ?", talent: "malin",
+    ok: "Les héros repèrent exactement où l'arc-en-ciel touche le sol : c'est sur un des prochains chemins !", effetOk: "pointe",
+    rate: "L'arc-en-ciel disparaît avant que les héros aient bien regardé… Il reviendra peut-être.", effetRate: "fil",
+    retour: "L'arc-en-ciel réapparaît ! Cette fois, il touche le sol juste devant vous : il y a là {objet}." },
+  { texte: "Un héros trouve une empreinte très bizarre par terre.", question: "À qui est-elle ?", talent: "malin",
+    ok: "En regardant bien l'empreinte, les héros comprennent quelque chose d'important.", effetOk: "indice",
+    rate: "L'empreinte est trop effacée… Mais il y en aura sûrement d'autres plus loin.", effetRate: "fil",
+    retour: "Voilà d'autres empreintes bizarres, bien nettes cette fois !", retourIndice: true },
+  { texte: "Il commence à faire nuit : il faut de la lumière.", question: "Comment faire de la lumière ?", talent: "coeur",
+    ok: "Les héros appellent gentiment les petites lumières de la nuit, qui viennent les accompagner : on y voit comme en plein jour.", effetOk: "facile",
+    rate: "Il fait tout noir… On se tient la main et on avance à tâtons.", effetRate: "retard" },
+  { texte: "Un héros attrape le hoquet. Chaque « hic » le fait sauter un peu en l'air.", question: "Comment arrêter le hoquet ?", talent: "coeur",
+    ok: "BOUH ! Le hoquet s'arrête d'un coup, et tout le monde éclate de rire.", effetOk: "etoile",
+    rate: "Hic ! Hic ! Le hoquet continue… et chaque saut fait du bruit.", effetRate: "retard" },
+  { texte: "Une porte (ou un passage) qui n'était pas là tout à l'heure vient d'apparaître.", question: "Vous essayez de l'ouvrir ?", talent: "force",
+    ok: "La porte s'ouvre sur un passage secret qui mène droit vers un des prochains chemins.", effetOk: "pointe",
+    rate: "BLAM ! La porte se referme toute seule. On ne saura pas tout de suite ce qu'il y avait derrière…", effetRate: "fil",
+    retour: "La porte mystérieuse réapparaît ! Cette fois, elle s'ouvre toute seule : derrière, il y a {objet} pour vous." },
+];
+
+const SUITE_LABEL = {
+  pointe: "Ensuite : un des prochains chemins sera plus facile.",
+  facile: "Ensuite : le prochain défi sera plus facile.",
+  retard: "Ensuite : le prochain défi sera un peu plus difficile.",
+  indice: "Ensuite : un indice sur le méchant.",
+  objet: "Ensuite : un objet rejoint le sac.",
+  ami: "Ensuite : un nouvel ami vous accompagne.",
+  soin: "Ensuite : tout le monde récupère 1 ❤️.",
+  etoile: "Ensuite : une étoile pour le héros.",
+  coeur: "Ensuite : le héros perd 1 ❤️.",
+  fil: "Ensuite : l'histoire reviendra plus tard.",
+};
+
+const SUITES = {
+  pointe: "➡️ Ce signe montre un des prochains chemins : il sera plus facile.",
+  facile: "➡️ Le prochain défi sera plus facile.",
+  retard: "➡️ Le prochain défi sera un peu plus difficile.",
+  fil: "➡️ Cette histoire n'est pas finie… elle reviendra plus tard.",
+  soin: "➡️ Tout le monde récupère 1 ❤️.",
+};
+
+// Imprévu du monde (texte simple) : on lui donne une suite au hasard
+function imprevuDepuisTexte(rng, texte) {
+  const connu = IMPREVUS_HISTOIRE.find((i) => i.texte === texte);
+  if (connu) return connu;
+  return {
+    texte, question: "Qu'est-ce que vous faites ?", talent: pick(rng, ["force", "malin", "coeur"]),
+    ok: pick(rng, IMPREVUS_REUSSIS), effetOk: pick(rng, ["facile", "indice", "etoile", "objet"]),
+    rate: "Ça ne se passe pas tout à fait comme prévu…", effetRate: pick(rng, ["retard", "fil"]),
+    retour: "Vous repensez à ce qui s'est passé tout à l'heure… et cette fois, tout s'arrange : vous trouvez même {objet} !",
+  };
+}
+
 function makeImprevu(st, rng, texte) {
   const theme = liveTheme(st);
-  const min = Math.min(...Object.values(st.talents));
-  const hint = pick(rng, Object.keys(st.talents).filter((t) => st.talents[t] === min));
-  const heroIdx = pickHero(st, hint);
+  let base;
+  if (texte) base = imprevuDepuisTexte(rng, texte);
+  else if (rng() < 0.75) base = pick(rng, IMPREVUS_HISTOIRE);
+  else base = imprevuDepuisTexte(rng, pick(rng, theme.imprevus));
+  const vars = { creature: pick(rng, theme.creatures), objet: pick(rng, OBJETS_TROUVES) };
+  const imp = {};
+  Object.keys(base).forEach((k) => { imp[k] = typeof base[k] === "string" ? fill(base[k], vars) : base[k]; });
+  imp.creature = vars.creature;
+  imp.objet = vars.objet;
+  const heroIdx = pickHero(st, imp.talent);
   const { difficultes, raisons } = talentDifficulties(st, 4);
-  return {
-    kind: "imprevu",
-    texte: nommer(texte || pick(rng, IMPREVUS_COMMUNS.concat(theme.imprevus)), heroAt(st, heroIdx)),
-    talent: hint, heroIdx, difficultes, raisons,
-  };
+  st.lastImprevuStep = st.step;
+  return { kind: "imprevu", texte: nommer(imp.texte, heroAt(st, heroIdx)), imp, talent: imp.talent, heroIdx, difficultes, raisons };
 }
 
 function insertImprevu(st, texte) {
@@ -469,14 +596,65 @@ function insertImprevu(st, texte) {
   st.current = makeImprevu(st, liveRng(st), texte);
 }
 
+// La suite d'un imprévu : ce qui change pour la suite de l'histoire
+function applySuite(st, effet, imp, hero, lignes) {
+  const objetsSac = (st.objets = st.objets || []);
+  switch (effet) {
+    case "pointe": {
+      const prochain = st.pile[st.pile.length - 1];
+      if (prochain && prochain.kind === "choix" && prochain.options.length) {
+        prochain.options[0].bonus = "Montré par l'imprévu : plus facile";
+        lignes.push(`➡️ Ce signe montre le chemin vers ${nomMilieu(prochain.options[0].lieu.nom)} : il sera plus facile.`);
+      } else {
+        st.prochainFacile = true;
+        lignes.push(SUITES.facile);
+      }
+      break;
+    }
+    case "facile": st.prochainFacile = true; lignes.push(SUITES.facile); break;
+    case "retard": st.prochainDifficile = true; lignes.push(SUITES.retard); break;
+    case "indice":
+      lignes.push(`🔎 Indice : ${st.indices.length ? st.indices.shift() : `le coupable, c'est ${nomMilieu(st.mechant.nom)}, et en vrai, ${st.mechant.raison}.`}`);
+      break;
+    case "objet":
+      objetsSac.push(imp.objet);
+      lignes.push(`➡️ ${capFirst(imp.objet)} rejoint votre sac 🎒 : ça pourra servir plus tard !`);
+      break;
+    case "ami":
+      if (!st.allies.includes(imp.creature)) st.allies.push(imp.creature);
+      lignes.push(`➡️ ${capFirst(imp.creature)} vous accompagne maintenant, et pourra vous aider plus tard (1 dé de plus).`);
+      break;
+    case "soin":
+      st.heroes.forEach((h) => { h.coeurs = Math.min(3, h.coeurs + 1); });
+      lignes.push(SUITES.soin);
+      break;
+    case "etoile":
+      if (hero) { hero.etoiles += 1; lignes.push(`➡️ ${hero.name} gagne une ✨ étoile.`); }
+      break;
+    case "coeur":
+      if (hero) {
+        hero.coeurs = Math.max(0, hero.coeurs - 1);
+        lignes.push(hero.coeurs === 0 ? `💔 ${hero.name} n'a plus de cœur : un câlin d'un ami lui rend 1 ❤️.` : `❤️ ${hero.name} a maintenant ${hero.coeurs} cœur${hero.coeurs > 1 ? "s" : ""}.`);
+      }
+      break;
+    case "fil":
+      st.fils.push({ type: "fil", id: `imp-${st.tick}`, resolution: imp.retour || "Vous repensez à ce qui s'est passé tout à l'heure… et cette fois, tout s'arrange !", indice: !!imp.retourIndice, objet: imp.retour && imp.retour.includes(imp.objet) ? imp.objet : null });
+      lignes.push(SUITES.fil);
+      break;
+    default:
+  }
+}
+
 function resolveImprevu(st, res, talent, heroIdx) {
   const c = st.current;
   const rng = liveRng(st);
+  const imp = c.imp || imprevuDepuisTexte(rng, c.texte);
   const hero = heroAt(st, heroIdx !== undefined && heroIdx !== null ? heroIdx : c.heroIdx);
   const lignes = [c.texte];
   let crit = null;
   if (res === "narr") {
-    lignes.push("💡 Les enfants ont trouvé quoi faire, sans lancer le dé.");
+    lignes.push(`💡 Les enfants ont trouvé quoi faire. ${nommer(imp.ok, hero)}`);
+    applySuite(st, imp.effetOk, imp, hero, lignes);
   } else {
     if (res === "crit") { crit = "crit"; res = "ok"; }
     if (res === "fumble") { crit = "fumble"; res = "oops"; }
@@ -486,11 +664,12 @@ function resolveImprevu(st, res, talent, heroIdx) {
     }
     st.talents[talent] = (st.talents[talent] || 0) + 1;
     st.lastTalents.push(talent);
-    lignes.push(res === "ok" ? `✅ ${pick(rng, IMPREVUS_REUSSIS)}` : `🌀 ${nommer(pick(rng, CONSEQUENCES), hero)}`);
+    lignes.push(res === "ok" ? `✅ ${nommer(imp.ok, hero)}` : `🌀 ${nommer(imp.rate, hero)}`);
     if (crit === "crit") lignes.push(`🌟 Réussite critique ! ${nommer(pick(rng, CRITIQUES), hero)} Une ✨ étoile en plus.`);
     if (crit === "fumble") lignes.push(`🙈 Catastrophe rigolote ! ${nommer(pick(rng, GAFFES), hero)} Une ✨ étoile de courage.`);
+    applySuite(st, res === "ok" ? imp.effetOk : imp.effetRate, imp, hero, lignes);
     if (talent === "coeur" && res === "ok") changeRep(st, 1, lignes);
-    heroEffects(st, hero, crit, "l'imprévu", lignes, lignes.join(" "));
+    heroEffects(st, hero, crit, "l'imprévu", lignes, "");
   }
   st.log.push({ titre: `⚡ Imprévu !${hero ? ` · ${hero.emoji} ${hero.name}` : ""}`, lignes, cls: "event" });
   st.current = st.pile.pop() || makeChoice(st);
@@ -712,6 +891,7 @@ function renderLiveCurrent(st) {
         <button class="live-option" data-live="choose" data-index="${i}">
           <strong>${o.special === "secondeChance" ? "↩️ " : "📍 "}${escapeHtml(o.lieu.nom)}</strong>
           <span>${o.special === "secondeChance" ? "Retourner aider quelqu'un qui en avait besoin…" : escapeHtml(o.lieu.description)}</span>
+          ${o.bonus ? `<em class="option-bonus">🌈 ${escapeHtml(o.bonus)}</em>` : ""}
         </button>`).join("")}</div>
     </section>`;
   }
@@ -742,10 +922,15 @@ function renderLiveCurrent(st) {
   if (c.kind === "imprevu") {
     return `<section class="live-current imprevu">
       ${stepHead(st, "Imprévu", "⚡ Il se passe quelque chose !", c.heroIdx)}
-      ${readBlock([c.texte])}
-      <p class="step-help">Demandez : « Qu'est-ce que vous faites ? » Si l'idée est évidente, pas besoin de dé :
-        <button class="btn btn-small btn-ghost" data-live="imprevu" data-res="narr">💡 On continue sans dé</button></p>
+      ${readBlock([c.texte, c.imp ? `Alors… ${c.imp.question}` : "Qu'est-ce que vous faites ?"])}
+      <p class="step-help">Laissez les enfants proposer une idée. Si elle est évidente, pas besoin de dé :
+        <button class="btn btn-small btn-ghost" data-live="imprevu" data-res="narr">💡 Bonne idée, ça marche sans dé</button></p>
       ${playBlock(st, c, "imprevu", c.talent, [["crit", "🌟 6"], ["ok", "✅ Réussi"], ["oops", "🌀 Raté (2-3)"], ["fumble", "🙈 1"]])}
+      ${c.imp ? `<details class="block block-gm"><summary>🎭 Pour vous : ce qui se passe selon le dé</summary>
+        <div class="outcomes">
+          <div class="outcome ok"><strong>✅ Ça marche</strong><p>${escapeHtml(nommer(c.imp.ok, heroAt(st, c.heroIdx)))}</p><p class="hint">${escapeHtml(SUITE_LABEL[c.imp.effetOk] || "")}</p></div>
+          <div class="outcome oops"><strong>🌀 Oui, mais…</strong><p>${escapeHtml(nommer(c.imp.rate, heroAt(st, c.heroIdx)))}</p><p class="hint">${escapeHtml(SUITE_LABEL[c.imp.effetRate] || "")}</p></div>
+        </div></details>` : ""}
     </section>`;
   }
   if (c.kind === "rival") {
