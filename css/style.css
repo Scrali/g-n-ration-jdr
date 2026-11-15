@@ -685,3 +685,111 @@ details.gm-box summary { cursor: pointer; font-family: "Fredoka", sans-serif; fo
 .live-who small, .live-talents small { color: var(--muted); }
 .alea-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .alea-card:not(:first-child) .alea-actions { opacity: 1; }
+
+/* ==========================================================
+   Lisibilité du mode direct : 3 blocs clairs par étape
+   ========================================================== */
+.live-head { position: relative; flex-wrap: wrap; padding: 14px 18px; }
+.live-head .adv-emoji { font-size: 2.6rem; }
+.live-head h2 { font-size: 1.5rem; }
+.live-head-text { flex: 1 1 200px; min-width: 0; }
+.live-head-tools { display: flex; gap: 6px; }
+.live-head-tools .btn { padding: 5px 10px; font-size: 0.85rem; box-shadow: none; }
+.live-head-tools .btn[disabled] { opacity: 0.4; cursor: default; }
+
+.live-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-start; background: var(--paper); border-radius: 14px; padding: 8px 10px; margin-bottom: 12px; border: 2px solid var(--line); }
+.btn-imprevu { background: var(--purple); box-shadow: 0 3px 0 #7a5cc4; }
+.de-switch { display: flex; align-items: center; gap: 4px; margin-left: auto; font-weight: 700; font-size: 0.9rem; }
+.de-switch button { border: 2px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 10px; cursor: pointer; font: inherit; font-weight: 600; }
+.de-switch button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* Fiches des héros, plus calmes */
+.hero-token { padding: 8px 12px; }
+.ht-stats { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 0.95rem; }
+.ht-pm { display: inline-flex; gap: 2px; }
+.ht-pm button, .ht-rep button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; min-width: 26px; padding: 1px 6px; cursor: pointer; font: inherit; font-size: 0.85rem; }
+.ht-pm button:hover, .ht-rep button:hover { border-color: var(--primary); }
+.ht-power { margin-left: auto; color: var(--muted); font-size: 0.8rem; }
+.ht-rep { display: flex; gap: 4px; margin-top: 4px; }
+
+/* Histoire passée : discrète */
+.live-log { gap: 8px; }
+.live-entry { padding: 10px 14px; font-size: 0.95rem; color: var(--muted); border-left-width: 4px; }
+.live-entry h4 { color: var(--ink); font-size: 1rem; }
+.live-entry:last-child { color: var(--ink); }
+.log-older summary { cursor: pointer; font-family: "Fredoka", sans-serif; font-weight: 600; padding: 8px 12px; background: var(--paper); border-radius: 12px; border: 2px dashed var(--line); }
+.log-older[open] summary { margin-bottom: 8px; }
+
+/* L'étape en cours */
+.live-current { padding: 0; overflow: hidden; display: flex; flex-direction: column; gap: 0; }
+.step-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 18px; background: #eafaf2; border-bottom: 2px solid var(--line); }
+.live-current.finale .step-head { background: #fff1ea; }
+.live-current.suspense .step-head { background: #2d2a32; color: #fdf6ec; }
+.live-current.imprevu .step-head { background: #f4ecff; }
+.live-current.ending .step-head { background: #fffbe8; }
+.step-kicker { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.live-current.suspense .step-kicker { color: #cfc6dd; }
+.step-head h3 { margin: 0; font-size: 1.4rem; }
+.turn-chip { display: flex; align-items: center; gap: 6px; background: #fff; border: 2px solid var(--green); border-radius: 999px; padding: 4px 14px 4px 6px; font-size: 1.05rem; }
+.turn-emoji { font-size: 1.6rem; line-height: 1; }
+.step-help { margin: 12px 18px 0; color: var(--ink); }
+.step-actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 18px 18px; }
+.live-current .live-options { padding: 12px 18px 18px; }
+
+.block { margin: 12px 18px 0; border-radius: 14px; padding: 12px 16px; }
+.block:last-child { margin-bottom: 18px; }
+.block-label { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.block-read { background: #f3f7ff; border-left: 6px solid var(--accent); }
+.block-read .block-label { color: var(--accent); }
+.block-read p { margin: 0 0 0.6em; font-size: 1.15rem; line-height: 1.65; max-width: 68ch; }
+.block-read p:last-child { margin-bottom: 0; }
+.block-read .sus-line { font-style: italic; color: #4b3f6b; }
+.block-read .sus-line::before { content: "⏳ "; font-style: normal; }
+.block-kids { background: #fffbe8; border: 2px dashed var(--yellow); }
+.block-kids .block-label { color: #a07800; }
+.block-kids p { margin: 0; font-size: 1.05rem; }
+.block-kids .solutions { margin: 6px 0 0; }
+.block-play { background: var(--paper); border: 2px solid var(--green); }
+.block-play .block-label { color: #2b8a60; }
+.play-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.play-label { font-family: "Fredoka", sans-serif; font-weight: 600; min-width: 4.5em; }
+.a-savoir { list-style: none; margin: 4px 0 8px; padding: 8px 12px; background: var(--bg); border-radius: 10px; font-size: 0.9rem; color: var(--ink); display: grid; gap: 3px; }
+.manual-results { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.manual-results .btn { font-size: 1.05rem; padding: 10px 16px; }
+.power-row { margin: 10px 18px 0; }
+.block-play .power-row { margin: 10px 0 0; }
+.block-gm { background: var(--bg); padding: 0; }
+.block-gm summary { cursor: pointer; padding: 10px 16px; font-weight: 700; color: var(--muted); }
+.block-gm[open] { padding-bottom: 12px; }
+.block-gm .outcomes, .block-gm .hint { margin-left: 16px; margin-right: 16px; }
+
+/* Le dé, plus compact dans une étape */
+.block-play .roller { background: var(--bg); margin: 8px 0 0; padding: 10px; }
+.block-play .roller .roll-btn { margin-top: 8px; }
+.block-play .die { width: 64px; height: 64px; padding: 8px; border-radius: 14px; }
+.block-play .pip { width: 11px; height: 11px; }
+.block-play .dice-area { min-height: 72px; margin: 6px 0; }
+.block-play .dice-result { font-size: 1.25rem; }
+
+/* Aventures préparées : détails plus discrets */
+.crits { gap: 2px; font-size: 0.85rem; color: var(--muted); }
+.crits p { background: none; border: none; padding: 0; }
+.scene .hint { font-size: 0.85rem; }
+.read-aloud.compact { background: #fff; }
+
+@media (max-width: 560px) {
+  .step-head, .block, .step-help, .step-actions { margin-left: 0; margin-right: 0; }
+  .block { margin: 10px 10px 0; padding: 10px 12px; }
+  .step-head { padding: 12px; }
+  .block-read p { font-size: 1.05rem; }
+  .de-switch { margin-left: 0; }
+  .live-current .live-options { padding: 10px; }
+}
+.block-play .dice-suspense:empty, .block-play .dice-result:empty { display: none; }
+.block-play .dice-suspense { min-height: 0; margin-bottom: 4px; }
+@media (max-width: 560px) {
+  .site-header { position: static; }
+  main { padding-bottom: 90px; }
+  .fab { padding: 10px 14px; font-size: 1rem; }
+  .play-label { min-width: 0; width: 100%; }
+}

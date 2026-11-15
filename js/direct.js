@@ -627,6 +627,15 @@ function liveUndo() {
 }
 
 /* ---------------- Affichage ---------------- */
+// Le Conteur choisit une fois pour toutes : le dé du site, ou son propre dé
+const DE_MODE_KEY = "petits-heros:demode";
+function deMode() {
+  try { return localStorage.getItem(DE_MODE_KEY) === "main" ? "main" : "site"; } catch { return "site"; }
+}
+function setDeMode(v) {
+  try { localStorage.setItem(DE_MODE_KEY, v); } catch { /* rien */ }
+}
+
 function liveTalentPicker(selected, difficultes) {
   return `<div class="mini-choices live-talents">${Object.entries(TALENTS).map(([id, t]) => `
     <button type="button" class="choice${id === selected ? " selected" : ""}" data-value="${id}">${t.emoji} ${t.nom}${difficultes ? ` <small>${DIFFICULTES[difficultes[id]].texte}</small>` : ""}</button>`).join("")}</div>`;
@@ -634,47 +643,71 @@ function liveTalentPicker(selected, difficultes) {
 
 function liveHeroPicker(st, selected) {
   if (!st.heroes.length) return "";
-  return `<div class="mini-label">Qui agit ?</div>
+  return `<div class="play-row"><span class="play-label">Qui ?</span>
     <div class="mini-choices live-who">${st.heroes.map((h, i) => `
-      <button type="button" class="choice${i === selected ? " selected" : ""}" data-value="${i}">${h.emoji} ${escapeHtml(h.name)}${h.talent ? ` <small>${TALENTS[h.talent].emoji}⭐</small>` : ""}</button>`).join("")}</div>`;
+      <button type="button" class="choice${i === selected ? " selected" : ""}" data-value="${i}">${h.emoji} ${escapeHtml(h.name)}</button>`).join("")}</div></div>`;
 }
 
-function spotlight(st, idx) {
+function turnChip(st, idx) {
   const h = heroAt(st, idx);
   if (!h) return "";
-  return `<div class="spotlight"><span class="spot-emoji">${h.emoji}</span>
-    <div><strong>C'est au tour de ${escapeHtml(h.name)} !</strong><br>
-    <small>Super-talent : ${TALENTS[h.talent].emoji} ${TALENTS[h.talent].nom} · Pouvoir : ${h.powerEmoji} ${escapeHtml(h.power)}${h.pouvoir ? " (déjà utilisé)" : ""}${h.item ? ` · Objet : ${escapeHtml(h.item)}` : ""}</small></div></div>`;
+  return `<div class="turn-chip"><span class="turn-emoji">${h.emoji}</span> Au tour de <strong>${escapeHtml(h.name)}</strong></div>`;
 }
 
-function powerButton(st, idx, action) {
-  const h = heroAt(st, idx);
-  if (!h || h.pouvoir) return "";
-  return `<button class="btn btn-big btn-power" data-live="${action}" data-res="pouvoir">✨ ${escapeHtml(h.name)} utilise son pouvoir (${h.powerEmoji} ${escapeHtml(h.power)})</button>`;
+// Bloc ① : tout ce qui se lit à voix haute, en un seul endroit
+function readBlock(lignes, titre = "① Lisez aux enfants") {
+  return `<div class="block block-read">
+    <div class="block-label">${titre}</div>
+    ${lignes.map((t) => `<p class="${t.startsWith("⏳") ? "sus-line" : ""}">${escapeHtml(t.replace(/^⏳ /, ""))}</p>`).join("")}
+  </div>`;
 }
 
-function controls(st, c, action, talentDefaut, boutons) {
-  return `<div class="live-controls">
-      ${liveHeroPicker(st, c.heroIdx)}
-      <div class="mini-label">Avec quel talent ? <small>(la difficulté change selon ce qui s'est passé avant)</small></div>
-      ${liveTalentPicker(talentDefaut, c.difficultes)}
-      ${(c.raisons || []).map((t) => `<p class="saga-note rep-note">${escapeHtml(t)}</p>`).join("")}
-      ${diceRollerHTML({ target: c.difficultes[talentDefaut], apply: action })}
-      <div class="live-results">${powerButton(st, c.heroIdx, action)}</div>
-      <div class="mini-label">Ou avec votre propre dé, cliquez le résultat :</div>
-      <div class="live-results">${boutons.map(([v, l, ghost]) => `<button class="btn btn-big${ghost ? " btn-ghost" : ""}" data-live="${action}" data-res="${v}">${l}</button>`).join("")}</div>
-    </div>`;
+// Bloc ③ : qui, avec quel talent, et le dé
+function playBlock(st, c, action, talentDefaut, boutons, extra = "") {
+  const h = heroAt(st, c.heroIdx);
+  const pouvoir = h && !h.pouvoir
+    ? `<button class="btn btn-small btn-power" data-live="${action}" data-res="pouvoir">✨ Pouvoir de ${escapeHtml(h.name)} : ${h.powerEmoji} ${escapeHtml(h.power)} (réussite sans dé)</button>`
+    : "";
+  const aSavoir = (c.raisons || []).concat(c.notes || []);
+  const de = deMode() === "site"
+    ? diceRollerHTML({ target: c.difficultes[talentDefaut], apply: action })
+    : `<div class="manual-results">${boutons.map(([v, l, ghost]) => `<button class="btn${ghost ? " btn-ghost" : ""}" data-live="${action}" data-res="${v}">${l}</button>`).join("")}</div>`;
+  return `<div class="block block-play">
+    <div class="block-label">${extra ? "③" : "②"} Le défi</div>
+    ${liveHeroPicker(st, c.heroIdx)}
+    <div class="play-row"><span class="play-label">Talent ?</span>${liveTalentPicker(talentDefaut, c.difficultes)}</div>
+    ${aSavoir.length ? `<ul class="a-savoir">${aSavoir.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>` : ""}
+    ${de}
+    ${pouvoir ? `<div class="power-row">${pouvoir}</div>` : ""}
+  </div>`;
+}
+
+function outcomesDetails(d, h, extraHint) {
+  return `<details class="block block-gm">
+    <summary>🎭 Pour vous : ce qui se passe selon le dé</summary>
+    <div class="outcomes">
+      <div class="outcome ok"><strong>✅ Ça marche</strong><p>${escapeHtml(nommer(d.reussite, h))}</p></div>
+      <div class="outcome oops"><strong>🌀 Oui, mais…</strong><p>${escapeHtml(nommer(d.rate, h))}</p></div>
+    </div>
+    <p class="hint">🌟 Un 6 ajoute un bonus et une étoile. 🙈 Un 1 ajoute une catastrophe rigolote et une étoile de courage. Le site écrit la suite tout seul.${extraHint || ""}</p>
+  </details>`;
+}
+
+function stepHead(st, kicker, titre, idx) {
+  return `<header class="step-head">
+    <div><div class="step-kicker">${kicker}</div><h3>${titre}</h3></div>
+    ${turnChip(st, idx)}
+  </header>`;
 }
 
 function renderLiveCurrent(st) {
   const c = st.current;
-  const notes = (list) => (list || []).map((t) => `<p class="saga-note">${escapeHtml(t)}</p>`).join("");
-  const lire = (list) => list.map((t, i) => `<div class="read-aloud">${i === 0 ? '<span class="label-small">📖 À lire</span>' : ""}${escapeHtml(t)}</div>`).join("");
+  const etape = `Étape ${Math.min(st.step + 1, st.nbScenes)} sur ${st.nbScenes}`;
 
   if (c.kind === "choix") {
     return `<section class="live-current">
-      <h3>🧭 ${escapeHtml(c.question)}</h3>
-      <p class="hint">${c.chooser ? `C'est <strong>${escapeHtml(c.chooser)}</strong> qui choisit cette fois (ou tout le monde vote).` : "Lisez les deux lieux aux enfants et laissez-les choisir (ou voter)."}</p>
+      ${stepHead(st, etape, `🧭 ${escapeHtml(c.question)}`, null)}
+      <p class="step-help">${c.chooser ? `C'est <strong>${escapeHtml(c.chooser)}</strong> qui choisit (ou tout le monde vote). Lisez les deux lieux :` : "Lisez les deux lieux, les enfants choisissent (ou votent) :"}</p>
       <div class="live-options">${c.options.map((o, i) => `
         <button class="live-option" data-live="choose" data-index="${i}">
           <strong>${o.special === "secondeChance" ? "↩️ " : "📍 "}${escapeHtml(o.lieu.nom)}</strong>
@@ -684,52 +717,45 @@ function renderLiveCurrent(st) {
   }
   if (c.kind === "suspense") {
     return `<section class="live-current suspense">
-      <h3>⏳ Moment de suspense…</h3>
-      ${lire(c.lire)}
-      <p class="saga-note">🎭 ${escapeHtml(c.conseil)}</p>
-      <div class="live-results"><button class="btn btn-big btn-reveal" data-live="reveal">👀 Révéler !</button></div>
+      ${stepHead(st, c.final ? "Juste avant la grande fin" : etape, "⏳ Moment de suspense", null)}
+      ${readBlock(c.lire, "Lisez lentement, en baissant la voix")}
+      <p class="step-help">🎭 ${escapeHtml(c.conseil)}</p>
+      <div class="step-actions"><button class="btn btn-big btn-reveal" data-live="reveal">👀 Révéler la suite</button></div>
     </section>`;
   }
   if (c.kind === "scene") {
     const d = c.defi;
-    const h = heroAt(st, c.heroIdx);
     const boutons = c.type === "rencontre"
-      ? [["crit", "🌟 6 !"], ["ok", "✅ Aidé"], ["oops", "🌀 Aidé, mais…"], ["fumble", "🙈 1 !"], ["non", "🚶 Pas aidé", true]]
-      : [["crit", "🌟 6 !"], ["ok", "✅ Réussi"], ["oops", "🌀 Oui, mais…"], ["fumble", "🙈 1 !"]];
+      ? [["crit", "🌟 6"], ["ok", "✅ Aidé"], ["oops", "🌀 Aidé, mais…"], ["fumble", "🙈 1"], ["non", "🚶 Pas aidé", true]]
+      : [["crit", "🌟 6"], ["ok", "✅ Réussi"], ["oops", "🌀 Raté (2-3)"], ["fumble", "🙈 1"]];
+    const nonAide = c.type === "rencontre" && deMode() === "site"
+      ? `<div class="power-row"><button class="btn btn-small btn-ghost" data-live="resolve" data-res="non">🚶 Les héros décident de ne pas aider</button></div>` : "";
     return `<section class="live-current">
-      <h3>📍 ${escapeHtml(c.lieu.nom)} ${c.type === "rencontre" ? "· 🤝 Rencontre" : ""}</h3>
-      ${spotlight(st, c.heroIdx)}
-      ${lire(c.lire)}
-      <div class="interaction"><strong>🧒 À vous de jouer :</strong> ${escapeHtml(c.interaction)}</div>
-      <div class="challenge">
-        <div class="challenge-head">Talent conseillé : ${talentBadge(d.talent)}</div>
-        <div class="outcomes">
-          <div class="outcome ok"><strong>✅ Ça marche</strong><p>${escapeHtml(nommer(d.reussite, h))}</p></div>
-          <div class="outcome oops"><strong>🌀 Oui, mais…</strong><p>${escapeHtml(nommer(d.rate, h))}</p></div>
-        </div>
-        <p class="hint">🌟 Sur un 6 : réussite critique, avec un bonus et une étoile. 🙈 Sur un 1 : catastrophe rigolote, avec une étoile de courage.${c.type === "rencontre" ? " Si les héros aident avec la Force, ils bousculent un peu : la réputation baisse." : ""}</p>
-      </div>
-      ${notes(c.notes)}
-      ${controls(st, c, "resolve", d.talent, boutons)}
+      ${stepHead(st, `${etape}${c.type === "rencontre" ? " · 🤝 Rencontre" : ""}`, `📍 ${escapeHtml(c.lieu.nom)}`, c.heroIdx)}
+      ${readBlock(c.lire)}
+      <div class="block block-kids"><div class="block-label">② Faites participer</div><p>${escapeHtml(c.interaction)}</p></div>
+      ${playBlock(st, c, "resolve", d.talent, boutons, true)}
+      ${nonAide}
+      ${outcomesDetails(d, heroAt(st, c.heroIdx), c.type === "rencontre" ? " Aider avec la Force bouscule un peu : la réputation baisse." : "")}
     </section>`;
   }
   if (c.kind === "imprevu") {
     return `<section class="live-current imprevu">
-      <h3>⚡ Imprévu !</h3>
-      ${spotlight(st, c.heroIdx)}
-      ${lire([c.texte])}
-      <p class="hint">Demandez : « Qu'est-ce que vous faites ? » Si l'idée est évidente, pas besoin de dé.</p>
-      <div class="live-results"><button class="btn btn-ghost" data-live="imprevu" data-res="narr">💡 Pas besoin de dé, on continue</button></div>
-      ${controls(st, c, "imprevu", c.talent, [["crit", "🌟 6 !"], ["ok", "✅ Réussi"], ["oops", "🌀 Oui, mais…"], ["fumble", "🙈 1 !"]])}
+      ${stepHead(st, "Imprévu", "⚡ Il se passe quelque chose !", c.heroIdx)}
+      ${readBlock([c.texte])}
+      <p class="step-help">Demandez : « Qu'est-ce que vous faites ? » Si l'idée est évidente, pas besoin de dé :
+        <button class="btn btn-small btn-ghost" data-live="imprevu" data-res="narr">💡 On continue sans dé</button></p>
+      ${playBlock(st, c, "imprevu", c.talent, [["crit", "🌟 6"], ["ok", "✅ Réussi"], ["oops", "🌀 Raté (2-3)"], ["fumble", "🙈 1"]])}
     </section>`;
   }
   if (c.kind === "rival") {
     return `<section class="live-current">
-      <h3>⚡ Un rival revient !</h3>
-      ${lire(c.lire)}${notes(c.notes)}
-      <div class="live-results">
+      ${stepHead(st, "Juste avant la fin", "⚡ Un rival revient !", null)}
+      ${readBlock(c.lire)}
+      <p class="step-help">${escapeHtml(c.notes.join(" "))}</p>
+      <div class="step-actions">
         <button class="btn btn-big" data-live="rival" data-res="ami">🤝 Devenu ami</button>
-        <button class="btn btn-big" data-live="rival" data-res="enfui">💨 Échappé</button>
+        <button class="btn btn-big btn-ghost" data-live="rival" data-res="enfui">💨 Échappé</button>
       </div>
     </section>`;
   }
@@ -737,16 +763,14 @@ function renderLiveCurrent(st) {
     const m = st.mechant;
     const defaut = c.essais.includes("coeur") ? "malin" : "coeur";
     return `<section class="live-current finale">
-      <h3>🏁 La grande fin : ${escapeHtml(st.finaleLieu.nom)}</h3>
-      ${spotlight(st, c.heroIdx)}
-      ${lire(c.lire)}
-      <div class="challenge">
-        <p>Le secret : <strong>${escapeHtml(m.raison)}</strong>. Les solutions possibles :</p>
+      ${stepHead(st, "La grande fin", `🏁 ${escapeHtml(st.finaleLieu.nom)}`, c.heroIdx)}
+      ${readBlock(c.lire)}
+      <div class="block block-kids"><div class="block-label">② Les solutions possibles</div>
+        <p class="hint">Le secret : ${escapeHtml(m.raison)}.</p>
         <ul class="solutions">${Object.entries(m.solutions).map(([t, txt]) => `
-          <li>${talentBadge(t)} ${diffBadge(c.difficultes[t])} ${escapeHtml(txt)}${c.essais.includes(t) ? " <em>(déjà essayé)</em>" : ""}</li>`).join("")}</ul>
+          <li>${talentBadge(t)} ${escapeHtml(txt)}${c.essais.includes(t) ? " <em>(déjà essayé)</em>" : ""}</li>`).join("")}</ul>
       </div>
-      ${notes(c.notes)}
-      ${controls(st, c, "finale", defaut, [["crit", "🌟 6 !"], ["ok", "✅ Ça marche !"], ["oops", "🌀 Pas encore", true], ["fumble", "🙈 1 !", true]])}
+      ${playBlock(st, c, "finale", defaut, [["crit", "🌟 6"], ["ok", "✅ Ça marche"], ["oops", "🌀 Pas encore", true], ["fumble", "🙈 1", true]], true)}
     </section>`;
   }
   // Fin
@@ -756,8 +780,8 @@ function renderLiveCurrent(st) {
     return h ? h.exploits.slice(0, 2).join(" ; ") : "";
   };
   return `<section class="live-current ending">
-    <h3>⭐ Le moment de fierté</h3>
-    <p>Chacun à son tour (adultes compris) dit : <em>ce que son héros a fait de mieux</em> et <em>ce qu'il a préféré</em>. Donnez une dernière étoile à chacun.</p>
+    ${stepHead(st, "Fin de l'aventure", "⭐ Le moment de fierté", null)}
+    <p class="step-help">Chacun à son tour (adultes compris) dit <em>ce que son héros a fait de mieux</em> et <em>ce qu'il a préféré</em>. Donnez une dernière étoile à chacun.</p>
     ${st.mode === "saga" ? `
       <form class="live-save">
         ${heroes.map((h, i) => `<label class="small-label" for="lx-${i}">⭐ Exploit de ${escapeHtml(h.name)}</label>
@@ -770,8 +794,8 @@ function renderLiveCurrent(st) {
         <textarea id="lx-notes" rows="2"></textarea>
         <div class="form-actions"><button type="submit" class="btn btn-big">📚 Enregistrer dans la saga</button></div>
       </form>` : `
-      <div class="form-actions">
-        <button class="btn print-btn" onclick="window.print()">🖨️ Imprimer notre histoire</button>
+      <div class="step-actions">
+        <button class="btn print-btn btn-ghost" onclick="window.print()">🖨️ Imprimer notre histoire</button>
         <button class="btn btn-big" data-live="quit">🔁 Nouvelle partie</button>
       </div>`}
   </section>`;
@@ -783,19 +807,20 @@ function renderHeroStrip(st) {
     ${st.heroes.map((h, i) => `
       <div class="hero-token${st.current && st.current.heroIdx === i ? " active" : ""}">
         <div class="ht-name">${h.emoji} ${escapeHtml(h.name)}</div>
-        <div class="ht-stats"><span title="Cœurs">${"❤️".repeat(h.coeurs)}${"🤍".repeat(Math.max(0, 3 - h.coeurs))}</span>
-          <span title="Étoiles">✨ ${h.etoiles}</span><span title="Pouvoir">${h.pouvoir ? "🔒" : h.powerEmoji}</span></div>
-        ${fini ? "" : `<div class="ht-btns">
-          <button data-live="hero" data-h="${i}" data-op="coeur-" title="Perdre un cœur">−❤️</button>
-          <button data-live="hero" data-h="${i}" data-op="coeur+" title="Câlin : +1 cœur">+❤️</button>
-          <button data-live="hero" data-h="${i}" data-op="etoile+" title="Gagner une étoile">+✨</button>
-          <button data-live="hero" data-h="${i}" data-op="etoile-" title="Dépenser une étoile">−✨</button>
-        </div>`}
+        <div class="ht-stats">
+          <span class="ht-val" title="Cœurs">${"❤️".repeat(h.coeurs)}${"🤍".repeat(Math.max(0, 3 - h.coeurs))}</span>
+          ${fini ? "" : `<span class="ht-pm"><button data-live="hero" data-h="${i}" data-op="coeur-" aria-label="Perdre un cœur">−</button><button data-live="hero" data-h="${i}" data-op="coeur+" aria-label="Gagner un cœur">+</button></span>`}
+        </div>
+        <div class="ht-stats">
+          <span class="ht-val" title="Étoiles">✨ ${h.etoiles}</span>
+          ${fini ? "" : `<span class="ht-pm"><button data-live="hero" data-h="${i}" data-op="etoile-" aria-label="Dépenser une étoile">−</button><button data-live="hero" data-h="${i}" data-op="etoile+" aria-label="Gagner une étoile">+</button></span>`}
+          <span class="ht-power" title="Pouvoir magique">${h.pouvoir ? "pouvoir utilisé" : `${h.powerEmoji} pouvoir prêt`}</span>
+        </div>
       </div>`).join("")}
     <div class="hero-token rep-token">
       <div class="ht-name">Réputation</div>
-      <div class="ht-stats"><span>${repLabel(st.reputation)}</span></div>
-      ${fini ? "" : `<div class="ht-btns">
+      <div class="ht-val">${repLabel(st.reputation)}</div>
+      ${fini ? "" : `<div class="ht-rep">
         <button data-live="rep" data-d="-1" title="Les héros ont été méchants ou brutaux">😠 Méchants</button>
         <button data-live="rep" data-d="1" title="Les héros ont été très gentils">😇 Gentils</button>
       </div>`}
@@ -803,42 +828,59 @@ function renderHeroStrip(st) {
   </div>`;
 }
 
+function renderLogEntry(e) {
+  return `<section class="live-entry ${e.cls || ""}">
+    <h4>${escapeHtml(e.titre)}</h4>${e.lignes.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
+    ${e.note ? `<p class="hint">${escapeHtml(e.note)}</p>` : ""}</section>`;
+}
+
 function renderLiveHTML(st) {
   const theme = liveTheme(st);
   const m = st.mechant;
   const ouverts = st.fils.filter((f) => f.type !== "secondeChance").length;
   const actif = st.current && st.current.kind !== "fin";
+  // Pendant la partie : seulement les 2 dernières étapes, le reste se replie
+  const visibles = actif ? 2 : st.log.length;
+  const anciens = st.log.slice(0, Math.max(0, st.log.length - visibles));
+  const recents = st.log.slice(Math.max(0, st.log.length - visibles));
+  const mode = deMode();
   return `
     <article class="adventure live theme-${theme.id}">
-      <header class="adv-header">
+      <header class="adv-header live-head">
         <div class="adv-emoji">${theme.emoji}</div>
-        <div>
+        <div class="live-head-text">
           <p class="adv-world">▶️ En direct · ${escapeHtml(theme.nom)}${st.ctx ? ` · 📚 Épisode ${st.ctx.numero} sur ${st.ctx.total}` : ""}</p>
           <h2>${escapeHtml(st.titre)}</h2>
-          <p class="adv-code">Étape ${Math.min(st.step + 1, st.nbScenes)} sur ${st.nbScenes}, puis la grande fin</p>
+        </div>
+        <div class="live-head-tools no-print">
+          <button class="btn btn-small btn-ghost" data-live="undo"${st.undo && st.undo.length ? "" : " disabled"}>↩️ Annuler</button>
+          <button class="btn btn-small btn-ghost" data-live="quit">✕ Arrêter</button>
         </div>
       </header>
       ${renderHeroStrip(st)}
-      <div class="live-tools no-print">
-        ${actif ? `<button class="btn btn-small" data-live="add-imprevu">⚡ Un imprévu !</button>
+      ${actif ? `<div class="live-tools no-print">
+        <button class="btn btn-small btn-imprevu" data-live="add-imprevu">⚡ Un imprévu !</button>
         <form class="idea-form"><input type="text" id="idea-input" maxlength="100" placeholder="Une idée des enfants à retenir…" aria-label="Idée des enfants">
-          <button class="btn btn-small btn-ghost" type="submit">✨ Noter une idée</button></form>` : ""}
-        <button class="btn btn-small btn-ghost" data-live="undo"${st.undo && st.undo.length ? "" : " disabled"}>↩️ Annuler le dernier clic</button>
-        <button class="btn btn-small btn-danger" data-live="quit">✕ Arrêter</button>
-      </div>
+          <button class="btn btn-small btn-ghost" type="submit">✨ Noter</button></form>
+        <div class="de-switch" role="group" aria-label="Quel dé ?">
+          <span>Dé :</span>
+          <button class="${mode === "site" ? "on" : ""}" data-live="demode" data-v="site">🎲 du site</button>
+          <button class="${mode === "main" ? "on" : ""}" data-live="demode" data-v="main">✋ le mien</button>
+        </div>
+      </div>` : ""}
       <details class="gm-box">
-        <summary>🤫 Pour le Conteur (secret)</summary>
+        <summary>🤫 Pour vous seulement : le secret de l'histoire</summary>
         <p>Le responsable : <strong>${escapeHtml(m.nom)}</strong>, ${escapeHtml(m.description)}. En vrai, <strong>${escapeHtml(m.raison)}</strong>.</p>
         <p>🦉 Compagnon pour Maman : ${escapeHtml(st.compagnon)}.</p>
         <p>Réputation : ${repLabel(st.reputation)} (${st.reputation > 0 ? "+" : ""}${st.reputation}) · Talents utilisés : 💪 ${st.talents.force} · 🧠 ${st.talents.malin} · ❤️ ${st.talents.coeur}</p>
         <p>🤝 Amis : ${escapeHtml(st.allies.join(", ") || "aucun pour l'instant")} · 🧵 Fils ouverts : ${ouverts}${st.secretConnu ? " · 🔑 secret découvert" : ""}</p>
         ${(st.ctx && st.ctx.gmExtra ? st.ctx.gmExtra : []).map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
-        <p class="hint" style="color:inherit">Comment l'histoire s'adapte : être dur ou méchant fait baisser la réputation, et la Force marche de moins en moins bien ; être gentil la fait monter, et le Cœur marche de mieux en mieux. Refaire toujours la même chose devient plus difficile, essayer un talent jamais utilisé devient plus facile. Si les enfants sont méchants dans ce qu'ils racontent, cliquez « 😠 Méchants » en haut.</p>
+        <p class="hint gm-hint">Gentils : le Cœur marche mieux. Durs ou méchants : la Force marche moins bien. Toujours le même talent : plus difficile. Talent jamais utilisé : plus facile. Si les enfants sont méchants dans ce qu'ils racontent, cliquez « 😠 Méchants ».</p>
       </details>
       <div class="live-log">
-        ${st.log.map((e) => `<section class="live-entry ${e.cls || ""}">
-          <h4>${escapeHtml(e.titre)}</h4>${e.lignes.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
-          ${e.note ? `<p class="hint">${escapeHtml(e.note)}</p>` : ""}</section>`).join("")}
+        ${anciens.length ? `<details class="log-older"><summary>📜 Relire le début de l'histoire (${anciens.length} passage${anciens.length > 1 ? "s" : ""})</summary>
+          <div class="live-log">${anciens.map(renderLogEntry).join("")}</div></details>` : ""}
+        ${recents.map(renderLogEntry).join("")}
       </div>
       ${renderLiveCurrent(st)}
     </article>`;
@@ -946,6 +988,7 @@ function initLive() {
           if (c && c.difficultes) Object.assign(c, talentDifficulties(st, c.kind === "scene" ? c.base : 4, c.kind === "finale"));
         });
       }); break;
+      case "demode": setDeMode(btn.dataset.v); refreshLive(false); break;
       case "undo": liveUndo(); break;
       case "quit": {
         const stop = () => { clearLive(); refreshLive(false); };
