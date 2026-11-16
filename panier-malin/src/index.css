@@ -1,0 +1,52 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-paper: #f7f8f6;
+  --color-ink: #1c2420;
+  --color-muted: #5b6660;
+  --color-line: #e3e7e3;
+  --color-save-50: #effaf2;
+  --color-save-100: #d9f2e0;
+  --color-save-600: #15803d;
+  --color-save-700: #116632;
+  --color-warn-50: #fff8eb;
+  --color-warn-700: #92560a;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper text-ink antialiased;
+    font-feature-settings: 'tnum' 1;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-save-600;
+  }
+}
+
+@utility card {
+  @apply rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgba(16,24,20,0.04)];
+}
+
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-primary {
+  @apply btn bg-save-600 text-white hover:bg-save-700;
+}
+
+@utility btn-ghost {
+  @apply btn border border-line bg-white text-ink hover:bg-paper;
+}
+
+@utility field {
+  @apply min-h-11 w-full rounded-xl border border-line bg-white px-3 text-base text-ink placeholder:text-muted/70 focus:border-save-600 focus:outline-none focus:ring-2 focus:ring-save-100;
+}
+
+@utility chip {
+  @apply inline-flex min-h-9 items-center gap-1 rounded-full border border-line bg-white px-3 text-sm text-ink transition-colors hover:border-save-600 aria-pressed:border-save-600 aria-pressed:bg-save-50 aria-pressed:text-save-700;
+}
