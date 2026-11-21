@@ -244,7 +244,17 @@ function startLive(themeId, lengthId, seed, ctx = null, heroes = null) {
       playmoOn() && team.some((h) => h.figurine) ? `🧸 Figurines : ${team.filter((h) => h.figurine).map((h) => `${h.name} = ${h.figurine}`).join(" · ")}` : "",
     ].filter(Boolean).join("\n") });
   st.introLignes = intro;
-  st.current = makeChoice(st);
+  // Première carte : l'introduction, à lire avant de choisir le premier chemin
+  st.current = {
+    kind: "intro",
+    recap: ctx && ctx.recap ? ctx.recap : null,
+    lire: intro,
+    aide: [
+      team.length ? `Chaque enfant présente son héros en une phrase, avec une voix de héros : ${joinList(team.map((h) => h.name))}.` : "",
+      `Le Compagnon (pour Maman) : ${theme.compagnon}.`,
+    ],
+    suite: makeChoice(st),
+  };
   return st;
 }
 
@@ -899,6 +909,20 @@ const MANUELS = [["crit", "🌟 6"], ["ok", "✅ Réussi"], ["oops", "🌀 2 ou 
 function renderLiveCurrent(st) {
   const c = st.current;
   const etape = `Étape ${Math.min(st.step + 1, st.nbScenes)} sur ${st.nbScenes}`;
+
+  if (c.kind === "intro") {
+    const pm = playmoOn() && liveTheme(st).playmo
+      ? [`🧸 Sortez : ${liveTheme(st).playmo.liste}. ${liveTheme(st).playmo.conseil}`].concat(
+        st.heroes.some((h) => h.figurine) ? [`🧸 Figurines : ${st.heroes.filter((h) => h.figurine).map((h) => `${h.name} = ${h.figurine}`).join(" · ")}`] : [])
+      : [];
+    return carte({
+      etiquette: st.ctx ? `Épisode ${st.ctx.numero} sur ${st.ctx.total}` : "Le début de l'histoire",
+      titre: escapeHtml(st.titre),
+      corps: `${c.recap ? `<h3 class="sous-titre">📺 Précédemment…</h3>${aLire(c.recap)}<h3 class="sous-titre">🌅 L'aventure commence</h3>` : ""}
+        ${aLire(c.lire)}${aide(c.aide.concat(pm))}`,
+      actions: `<button class="btn btn-big" data-live="continuer">C'est parti ! →</button>`,
+    });
+  }
 
   if (c.kind === "choix") {
     return carte({
